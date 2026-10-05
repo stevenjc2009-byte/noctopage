@@ -1,8 +1,11 @@
 #include "app.h"
 
 #include "core/log.h"
+#include "screens/book.h"
+#include "screens/reader.h"
 #include "screens/screens.h"
 #include "ui/dialog.h"
+#include "ui/menu.h"
 #include "ui/sidebar.h"
 #include "ui/theme.h"
 
@@ -30,6 +33,30 @@ void app_init(void)
 	SCREENS[g_section]->enter();
 }
 
+void app_open_book(const db_book_t *b)
+{
+	log_printf("open: %s (kind %d)", b->path, b->kind);
+	SCREENS[g_section]->leave();
+	if (b->kind == DB_KIND_REFLOW)
+		book_open(b);
+	else
+		reader_open(b);
+}
+
+/* A book or comic fills the screen and owns the input until it closes. */
+static int viewer_open(void) { return reader_is_open() || book_is_open(); }
+
+static int viewer_hints(hint_t *out, int max)
+{
+	return book_is_open() ? book_hints(out, max) : reader_hints(out, max);
+}
+
+void app_shutdown(void)
+{
+	reader_close();
+	book_close();
+}
+
 int app_quit_requested(void)
 {
 	return g_quit;
@@ -52,6 +79,17 @@ void app_update(const input_t *in)
 		return;
 	}
 
+	if (viewer_open() && !(in->pressed & IN_START)) {
+		if (book_is_open())
+			book_update(in);
+		else
+			reader_update(in);
+		if (!viewer_open()) SCREENS[g_section]->enter(); /* shows the new progress */
+		n = viewer_hints(hints, HINTBAR_MAX);
+		hintbar_set(hints, n);
+		return;
+	}
+
 	if (in->pressed & IN_START) {
 		dialog_open_confirm("Quit Noctopage?", "Your place in every book is saved.");
 		n = dialog_hints(hints, HINTBAR_MAX);
@@ -59,7 +97,9 @@ void app_update(const input_t *in)
 		return;
 	}
 
-	if (in->pressed & IN_L)
+	/* An open menu owns L/R and touch until it closes. */
+	if (menu_is_open()) {
+	} else if (in->pressed & IN_L)
 		switch_section((section_t)((g_section + SEC_COUNT - 1) % SEC_COUNT));
 	else if (in->pressed & IN_R)
 		switch_section((section_t)((g_section + 1) % SEC_COUNT));
@@ -77,8 +117,17 @@ void app_update(const input_t *in)
 
 void app_draw(void)
 {
-	SCREENS[g_section]->draw();
-	sidebar_draw(g_section, g_now_ms);
+	if (book_is_open()) {
+		book_draw();
+	} else if (reader_is_open()) {
+		reader_draw();
+	} else {
+		SCREENS[g_section]->draw();
+		sidebar_draw(g_section, g_now_ms);
+	}
 	dialog_draw(); /* dims content + sidebar, but not the hint bar below */
-	hintbar_draw();
+	/* A reader page fills the screen: the bar shows only with the reader's overlay. */
+	hint_t h[HINTBAR_MAX];
+	if (!viewer_open() || dialog_is_open() || viewer_hints(h, HINTBAR_MAX) > 0)
+		hintbar_draw();
 }

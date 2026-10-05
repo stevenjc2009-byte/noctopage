@@ -1,0 +1,5 @@
+src/reader/page_cache.c
+src/reader/spread.c
+src/reader/zones.c
+src/reader/fit.c
+src/reader/crop.c
