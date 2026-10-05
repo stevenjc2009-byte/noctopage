@@ -1,0 +1,4 @@
+src/doc/mdoc.c
+src/doc/mdoc_render.c
+src/doc/mdoc_pos.c
+src/doc/mdoc_toc.c

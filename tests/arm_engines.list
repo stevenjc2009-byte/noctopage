@@ -1,0 +1,4 @@
+src/comic/archive.c
+src/comic/folder.c
+src/img/decode.c
+src/img/scale.c
