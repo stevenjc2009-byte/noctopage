@@ -1,0 +1,122 @@
+{
+  "natural_order.cbz": {
+    "kind": "cbz",
+    "pages": 5,
+    "archive_order": [
+      "p1.png",
+      "p10.png",
+      "p2.png",
+      "p3.png",
+      "p9.png"
+    ],
+    "natural_order": [
+      "p1.png",
+      "p2.png",
+      "p3.png",
+      "p9.png",
+      "p10.png"
+    ]
+  },
+  "mixed_case_junk.cbz": {
+    "kind": "cbz",
+    "pages": 4,
+    "natural_order": [
+      "Cover.JPG",
+      "page1.png",
+      "page2.PNG",
+      "Page10.png"
+    ],
+    "must_ignore": [
+      "__MACOSX/._page1.png",
+      "Thumbs.db",
+      "notes/readme.txt"
+    ]
+  },
+  "natural_order.cbt": {
+    "kind": "cbt",
+    "pages": 5,
+    "archive_order": [
+      "p1.png",
+      "p10.png",
+      "p2.png",
+      "p3.png",
+      "p9.png"
+    ],
+    "natural_order": [
+      "p1.png",
+      "p2.png",
+      "p3.png",
+      "p9.png",
+      "p10.png"
+    ]
+  },
+  "natural_order.cb7": {
+    "kind": "cb7",
+    "pages": 5,
+    "archive_order": [
+      "p1.png",
+      "p10.png",
+      "p2.png",
+      "p3.png",
+      "p9.png"
+    ],
+    "natural_order": [
+      "p1.png",
+      "p2.png",
+      "p3.png",
+      "p9.png",
+      "p10.png"
+    ]
+  },
+  "folder_comic/": {
+    "kind": "folder",
+    "pages": 3,
+    "natural_order": [
+      "page1.jpg",
+      "page2.png",
+      "page10.jpg"
+    ]
+  },
+  "tall_800x9000.png": {
+    "kind": "image",
+    "width": 800,
+    "height": 9000
+  },
+  "tall_800x9000.jpg": {
+    "kind": "image",
+    "width": 800,
+    "height": 9000
+  },
+  "page.webp": {
+    "kind": "image",
+    "width": 400,
+    "height": 600
+  },
+  "日本語の漫画 第1巻.cbz": {
+    "kind": "cbz",
+    "pages": 3,
+    "natural_order": [
+      "ページ01.png",
+      "ページ02.png",
+      "ページ10.png"
+    ],
+    "utf8_entry_names": true
+  },
+  "minimal.epub": {
+    "kind": "epub3",
+    "chapters": 2,
+    "title": "Fixture Book",
+    "cover": "OEBPS/images/cover.png"
+  },
+  "minimal.fb2": {
+    "kind": "fb2",
+    "title": "Fixture FB2"
+  },
+  "minimal.txt": {
+    "kind": "txt"
+  },
+  "two_pages.pdf": {
+    "kind": "pdf",
+    "pages": 2
+  }
+}

@@ -1,0 +1,9 @@
+build*/
+tests/build*/
+third_party/mupdf/src/
+third_party/mupdf/build*/
+third_party/*.tar.gz
+*.vpk
+__pycache__/
+third_party/mupdf/host/
+third_party/mupdf/vita/

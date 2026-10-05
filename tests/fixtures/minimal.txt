@@ -1,0 +1,8 @@
+Fixture text file
+=================
+
+This plain UTF-8 file exercises the TXT path of the book reader.
+
+Second paragraph. Accented: café, naïve, über. Japanese: 吉野家の牛丼。
+
+The end.
