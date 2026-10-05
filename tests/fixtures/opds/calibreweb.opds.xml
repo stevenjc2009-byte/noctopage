@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:opds="http://opds-spec.org/2010/catalog" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <id>urn:uuid:2853dacf-ed79-42f5-8e8a-a7bb3d1ae6a2</id>
+  <updated>2026-10-05T09:00:00+00:00</updated>
+  <link rel="self" href="/opds/new" type="application/atom+xml;profile=opds-catalog"/>
+  <link rel="start" href="/opds" type="application/atom+xml;profile=opds-catalog"/>
+  <link rel="up" href="/opds" type="application/atom+xml;profile=opds-catalog"/>
+  <link title="Search" type="application/atom+xml" href="/opds/search/{searchTerms}" rel="search"/>
+  <link title="Search" type="application/opensearchdescription+xml" href="/opds/osd" rel="search"/>
+  <link rel="next" href="/opds/new?offset=60" type="application/atom+xml;profile=opds-catalog"/>
+  <title>Calibre-Web</title>
+  <author>
+    <name>Calibre-Web</name>
+    <uri>https://github.com/janeczku/calibre-web</uri>
+  </author>
+  <entry>
+    <title>The Time Machine</title>
+    <id>urn:uuid:7f1c4c8e-31cb-4a3e-aaf2-0f4d4b2c8a11</id>
+    <updated>2026-10-04T18:00:00+00:00</updated>
+    <author>
+      <name>H. G. Wells</name>
+      <uri>https://example.org/author/1</uri>
+    </author>
+    <content type="xhtml">
+      <div xmlns="http://www.w3.org/1999/xhtml">
+        <p>A scientist builds a machine&#160;and travels to the year 802,701.</p>
+        <p>Tags: <b>Science Fiction</b>, Classics</p>
+      </div>
+    </content>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/12/epub/" length="215300" mtime="2026-10-04T18:00:00+00:00" type="application/epub+zip"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/12/mobi/" length="301000" mtime="2026-10-04T18:00:00+00:00" type="application/x-mobipocket-ebook"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/12/pdf/" length="900100" mtime="2026-10-04T18:00:00+00:00" type="application/pdf"/>
+    <link type="image/jpeg" href="/opds/cover/12?thumb=1" rel="http://opds-spec.org/image/thumbnail"/>
+    <link type="image/jpeg" href="/opds/cover/12?full=1" rel="http://opds-spec.org/image"/>
+  </entry>
+  <entry>
+    <title>Shelf: Favourites</title>
+    <id>urn:uuid:shelf-1</id>
+    <updated>2026-10-04T18:00:00+00:00</updated>
+    <link rel="subsection" href="/opds/shelf/1" type="application/atom+xml;profile=opds-catalog"/>
+  </entry>
+</feed>

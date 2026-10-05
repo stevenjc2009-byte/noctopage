@@ -1,0 +1,5 @@
+src/net/http.c -DCURL_STATICLIB -Ithird_party/tls-mbedtls/include
+src/net/http_vita.c
+src/net/fetch.c -DCURL_STATICLIB -Ithird_party/tls-mbedtls/include
+src/net/dlq.c -DCURL_STATICLIB -Ithird_party/tls-mbedtls/include
+src/net/dlq_name.c

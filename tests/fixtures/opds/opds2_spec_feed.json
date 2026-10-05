@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "title": "Example listing publications",
+    "numberOfItems": 5,
+    "itemsPerPage": 2,
+    "currentPage": 1
+  },
+  "links": [
+    {"rel": "self", "href": "/opds/new.json?page=1", "type": "application/opds+json"},
+    {"rel": "start", "href": "/opds/root.json", "type": "application/opds+json"},
+    {"rel": "up", "href": "/opds/root.json", "type": "application/opds+json"},
+    {"rel": "next", "href": "new.json?page=2", "type": "application/opds+json"},
+    {"rel": "previous", "href": "new.json?page=0", "type": "application/opds+json"},
+    {"rel": "search", "href": "/opds/search{?query}", "type": "application/opds+json", "templated": true}
+  ],
+  "publications": [
+    {
+      "metadata": {
+        "@type": "http://schema.org/Book",
+        "title": "Moby-Dick",
+        "author": "Herman Melville",
+        "identifier": "urn:isbn:978-3-16-148410-0",
+        "language": "en",
+        "modified": "2015-09-29T17:00:00Z",
+        "description": "<p>Call me <b>Ishmael</b>. Some years ago &mdash; never mind how long &amp; precisely &ndash; having little money.</p><p>Second paragraph.</p>"
+      },
+      "links": [
+        {"rel": "self", "href": "publication/1.json", "type": "application/opds-publication+json"},
+        {"rel": "http://opds-spec.org/acquisition/open-access", "href": "../files/moby-dick.epub", "type": "application/epub+zip"},
+        {"rel": "http://opds-spec.org/acquisition/open-access", "href": "../files/moby-dick.pdf", "type": "application/pdf"},
+        {"rel": "http://opds-spec.org/acquisition/sample", "href": "../files/moby-dick-sample.epub", "type": "application/epub+zip"}
+      ],
+      "images": [
+        {"href": "../img/moby-large.jpg", "type": "image/jpeg", "height": 1400, "width": 800},
+        {"href": "../img/moby-small.jpg", "type": "image/jpeg", "height": 140, "width": 80}
+      ]
+    },
+    {
+      "metadata": {
+        "@type": "http://schema.org/Book",
+        "title": "A Paid Book",
+        "author": [{"name": "Jane Doe"}, {"name": "John Roe", "links": []}, "Plain String"],
+        "language": ["en", "fr"]
+      },
+      "links": [
+        {"rel": "http://opds-spec.org/acquisition/buy", "href": "https://shop.example.com/buy/42", "type": "text/html", "properties": {"price": {"currency": "USD", "value": 9.99}}}
+      ],
+      "images": [{"href": "https://img.example.com/c.png", "type": "image/png", "height": 400, "width": 300}]
+    }
+  ],
+  "facets": [
+    {
+      "metadata": {"title": "Sort"},
+      "links": [
+        {"rel": "self", "href": "/opds/new.json?sort=new", "type": "application/opds+json", "title": "Newest", "properties": {"numberOfItems": 5}},
+        {"href": "/opds/new.json?sort=title", "type": "application/opds+json", "title": "Title"}
+      ]
+    }
+  ]
+}

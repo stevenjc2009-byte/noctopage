@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:pse="http://vaemendis.net/opds-pse/ns">
+  <id>root</id>
+  <title>Komga OPDS catalog</title>
+  <updated>2026-10-05T10:00:00Z</updated>
+  <author>
+    <name>Komga</name>
+    <uri>https://komga.org</uri>
+  </author>
+  <link rel="self" href="/opds/v1.2/catalog" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+  <link rel="start" href="/opds/v1.2/catalog" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="/opds/v1.2/search"/>
+  <entry>
+    <id>keepReading</id>
+    <title>Keep Reading</title>
+    <updated>2026-10-05T10:00:00Z</updated>
+    <content type="text">Continue reading your in-progress books</content>
+    <link rel="subsection" href="/opds/v1.2/books/ondeck" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+  </entry>
+  <entry>
+    <id>allSeries</id>
+    <title>All series</title>
+    <updated>2026-10-05T10:00:00Z</updated>
+    <content type="text">Browse by series</content>
+    <link rel="subsection" href="/opds/v1.2/series" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+  </entry>
+</feed>

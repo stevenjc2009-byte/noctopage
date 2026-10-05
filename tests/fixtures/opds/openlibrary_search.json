@@ -1,0 +1,342 @@
+{
+ "@context": "https://readium.org/webpub-manifest/context.jsonld",
+ "metadata": {
+  "title": "Search Results",
+  "numberOfItems": 99,
+  "itemsPerPage": 2,
+  "currentPage": 1
+ },
+ "links": [
+  {
+   "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access&limit=2",
+   "type": "application/opds+json",
+   "rel": "self"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search{?query,language,mode,media_type}",
+   "type": "application/opds+json",
+   "rel": "search",
+   "templated": true
+  },
+  {
+   "href": "https://archive.org/services/loans/loan/?action=user_bookshelf",
+   "type": "application/opds+json",
+   "rel": "http://opds-spec.org/shelf"
+  },
+  {
+   "href": "https://archive.org/services/loans/loan/?action=user_profile",
+   "type": "application/opds-profile+json",
+   "rel": "profile"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?query=open_access&limit=2&mode=open_access",
+   "type": "application/opds+json",
+   "rel": "self"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?query=open_access&limit=2&mode=open_access&page=1",
+   "type": "application/opds+json",
+   "rel": "first"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?query=open_access&limit=2&mode=open_access&page=2",
+   "type": "application/opds+json",
+   "rel": "next"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?query=open_access&limit=2&mode=open_access&page=50",
+   "type": "application/opds+json",
+   "rel": "last"
+  }
+ ],
+ "publications": [
+  {
+   "metadata": {
+    "title": "Guerilla Open Access Manifesto",
+    "@type": "http://schema.org/Book",
+    "language": [
+     "en"
+    ],
+    "description": "This edition is dedicated to the late Aaron Swartz, author, thinker, developer, freedom fighter.",
+    "author": [
+     {
+      "name": "Aaron Swartz",
+      "links": [
+       {
+        "href": "https://openlibrary.org/authors/OL7167953A",
+        "type": "text/html",
+        "rel": "author"
+       },
+       {
+        "href": "https://openlibrary.org/opds/authors/OL7167953A",
+        "type": "application/opds+json",
+        "rel": "author"
+       }
+      ]
+     }
+    ],
+    "subject": [
+     {
+      "name": "Open Access",
+      "links": [
+       {
+        "href": "https://openlibrary.org/opds/search?query=subject%3A%22Open+Access%22&title=Open+Access",
+        "type": "application/opds+json"
+       }
+      ]
+     },
+     {
+      "name": "Freedom",
+      "links": [
+       {
+        "href": "https://openlibrary.org/opds/search?query=subject%3A%22Freedom%22&title=Freedom",
+        "type": "application/opds+json"
+       }
+      ]
+     }
+    ],
+    "numberOfPages": 2,
+    "aggregateRating": {
+     "@type": "AggregateRating",
+     "ratingValue": 5.0,
+     "ratingCount": 1,
+     "bestRating": 5,
+     "worstRating": 1
+    }
+   },
+   "links": [
+    {
+     "href": "https://openlibrary.org/opds/books/OL25421510M",
+     "type": "application/opds-publication+json",
+     "rel": "self"
+    },
+    {
+     "href": "https://openlibrary.org/books/OL25421510M",
+     "type": "text/html",
+     "rel": "alternate"
+    },
+    {
+     "href": "https://openlibrary.org/books/OL25421510M.json",
+     "type": "application/json",
+     "rel": "alternate"
+    },
+    {
+     "href": "https://archive.org/services/loans/loan/?action=webpub&identifier=GuerillaOpenAccessManifesto&opds=1",
+     "type": "application/opds-publication+json",
+     "rel": "alternate",
+     "title": "Internet Archive",
+     "properties": {
+      "authenticate": {
+       "href": "https://archive.org/services/loans/loan/?action=authentication_document",
+       "type": "application/opds-authentication+json"
+      }
+     }
+    }
+   ],
+   "images": [
+    {
+     "href": "https://covers.openlibrary.org/b/id/9785893-L.jpg",
+     "type": "image/jpeg",
+     "rel": "cover"
+    }
+   ]
+  },
+  {
+   "metadata": {
+    "title": "Networks, open access, and virtual libraries",
+    "@type": "http://schema.org/Book",
+    "language": [],
+    "author": [
+     {
+      "name": "Clinic on Library Applications of Data Processing (28th 1991 University of Illinois at Urbana-Champaign)",
+      "links": [
+       {
+        "href": "https://openlibrary.org/authors/OL686396A",
+        "type": "text/html",
+        "rel": "author"
+       },
+       {
+        "href": "https://openlibrary.org/opds/authors/OL686396A",
+        "type": "application/opds+json",
+        "rel": "author"
+       }
+      ]
+     },
+     {
+      "name": "Brett Sutton",
+      "links": [
+       {
+        "href": "https://openlibrary.org/authors/OL583155A",
+        "type": "text/html",
+        "rel": "author"
+       },
+       {
+        "href": "https://openlibrary.org/opds/authors/OL583155A",
+        "type": "application/opds+json",
+        "rel": "author"
+       }
+      ]
+     },
+     {
+      "name": "Charles Hargis Davis",
+      "links": [
+       {
+        "href": "https://openlibrary.org/authors/OL1077026A",
+        "type": "text/html",
+        "rel": "author"
+       },
+       {
+        "href": "https://openlibrary.org/opds/authors/OL1077026A",
+        "type": "application/opds+json",
+        "rel": "author"
+       }
+      ]
+     }
+    ],
+    "subject": [
+     {
+      "name": "Automation",
+      "links": [
+       {
+        "href": "https://openlibrary.org/opds/search?query=subject%3A%22Automation%22&title=Automation",
+        "type": "application/opds+json"
+       }
+      ]
+     },
+     {
+      "name": "Congresses",
+      "links": [
+       {
+        "href": "https://openlibrary.org/opds/search?query=subject%3A%22Congresses%22&title=Congresses",
+        "type": "application/opds+json"
+       }
+      ]
+     }
+    ],
+    "subtitle": "implications for the research library",
+    "numberOfPages": 153
+   },
+   "links": [
+    {
+     "href": "https://openlibrary.org/opds/books/OL7228883M",
+     "type": "application/opds-publication+json",
+     "rel": "self"
+    },
+    {
+     "href": "https://openlibrary.org/books/OL7228883M",
+     "type": "text/html",
+     "rel": "alternate"
+    },
+    {
+     "href": "https://openlibrary.org/books/OL7228883M.json",
+     "type": "application/json",
+     "rel": "alternate"
+    },
+    {
+     "href": "https://archive.org/services/loans/loan/?action=webpub&identifier=networksopenacce28clin&opds=1",
+     "type": "application/opds-publication+json",
+     "rel": "alternate",
+     "title": "Internet Archive",
+     "properties": {
+      "authenticate": {
+       "href": "https://archive.org/services/loans/loan/?action=authentication_document",
+       "type": "application/opds-authentication+json"
+      }
+     }
+    }
+   ],
+   "images": [
+    {
+     "href": "https://covers.openlibrary.org/b/id/4728758-L.jpg",
+     "type": "image/jpeg",
+     "rel": "cover"
+    }
+   ]
+  }
+ ],
+ "facets": [
+  {
+   "metadata": {
+    "title": "Availability"
+   },
+   "links": [
+    {
+     "title": "Everything",
+     "href": "https://openlibrary.org/opds/search?query=open_access",
+     "type": "application/opds+json",
+     "rel": "https://openlibrary.org/opds/rel/facet/availability"
+    },
+    {
+     "title": "Borrow",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=ebooks",
+     "type": "application/opds+json",
+     "rel": "https://openlibrary.org/opds/rel/facet/availability"
+    },
+    {
+     "title": "Open Access",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access",
+     "type": "application/opds+json",
+     "rel": [
+      "self",
+      "https://openlibrary.org/opds/rel/facet/availability"
+     ],
+     "properties": {
+      "active": true
+     }
+    },
+    {
+     "title": "Buy",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=buyable",
+     "type": "application/opds+json",
+     "rel": "https://openlibrary.org/opds/rel/facet/availability"
+    }
+   ]
+  },
+  {
+   "metadata": {
+    "title": "Language"
+   },
+   "links": [
+    {
+     "title": "All",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access",
+     "type": "application/opds+json",
+     "rel": [
+      "self",
+      "https://openlibrary.org/opds/rel/facet/language"
+     ],
+     "properties": {
+      "active": true
+     }
+    },
+    {
+     "title": "Abkhaz",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access&language=ab",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 1
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    },
+    {
+     "title": "Afrikaans",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access&language=af",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 333
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    },
+    {
+     "title": "Akan",
+     "href": "https://openlibrary.org/opds/search?query=open_access&mode=open_access&language=ak",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 1
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    }
+   ]
+  }
+ ]
+}

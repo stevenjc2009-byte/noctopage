@@ -1,0 +1,597 @@
+{
+ "@context": "https://readium.org/webpub-manifest/context.jsonld",
+ "metadata": {
+  "title": "Open Library"
+ },
+ "links": [
+  {
+   "href": "https://openlibrary.org/opds/",
+   "type": "application/opds+json",
+   "rel": "self"
+  },
+  {
+   "href": "https://openlibrary.org/opds/",
+   "type": "application/opds+json",
+   "rel": "start"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search{?query,language,mode,media_type}",
+   "type": "application/opds+json",
+   "rel": "search",
+   "templated": true
+  },
+  {
+   "href": "https://archive.org/services/loans/loan/?action=user_bookshelf",
+   "type": "application/opds+json",
+   "rel": "http://opds-spec.org/shelf"
+  },
+  {
+   "href": "https://archive.org/services/loans/loan/?action=user_profile",
+   "type": "application/opds-profile+json",
+   "rel": "profile"
+  },
+  {
+   "href": "https://openlibrary.org/opds/?page=2",
+   "type": "application/opds+json",
+   "rel": "next"
+  }
+ ],
+ "publications": [],
+ "navigation": [
+  {
+   "href": "https://openlibrary.org/opds/search?sort=trending&title=Art&query=subject_key%3Aart+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D",
+   "title": "Art",
+   "type": "application/opds+json"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?sort=trending&title=Science+Fiction&query=subject_key%3Ascience_fiction+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D",
+   "title": "Science Fiction",
+   "type": "application/opds+json"
+  },
+  {
+   "href": "https://openlibrary.org/opds/search?sort=trending&title=Fantasy&query=subject_key%3Afantasy+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D",
+   "title": "Fantasy",
+   "type": "application/opds+json"
+  }
+ ],
+ "groups": [
+  {
+   "metadata": {
+    "title": "Trending Books",
+    "numberOfItems": 26975,
+    "itemsPerPage": 25,
+    "currentPage": 1
+   },
+   "links": [
+    {
+     "href": "https://openlibrary.org/opds/search?query=trending_score_hourly_sum%3A%5B1+TO+%2A%5D+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D+readinglog_count%3A%5B4+TO+%2A%5D&limit=25&sort=trending&title=Trending+Books",
+     "type": "application/opds+json",
+     "rel": [
+      "self",
+      "http://opds-spec.org/sort/popular"
+     ]
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=trending_score_hourly_sum%3A%5B1+TO+%2A%5D+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D+readinglog_count%3A%5B4+TO+%2A%5D&limit=25&sort=trending&title=Trending+Books&page=1",
+     "type": "application/opds+json",
+     "rel": "first"
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=trending_score_hourly_sum%3A%5B1+TO+%2A%5D+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D+readinglog_count%3A%5B4+TO+%2A%5D&limit=25&sort=trending&title=Trending+Books&page=2",
+     "type": "application/opds+json",
+     "rel": "next"
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=trending_score_hourly_sum%3A%5B1+TO+%2A%5D+-subject%3A%22content_warning%3Acover%22+ebook_access%3A%5Bborrowable+TO+%2A%5D+readinglog_count%3A%5B4+TO+%2A%5D&limit=25&sort=trending&title=Trending+Books&page=1079",
+     "type": "application/opds+json",
+     "rel": "last"
+    }
+   ],
+   "publications": [
+    {
+     "metadata": {
+      "title": "A Little Princess",
+      "@type": "http://schema.org/Book",
+      "language": [
+       "en"
+      ],
+      "description": "Sara Crewe, the daughter of a widowed officer stationed in India, has come to London to attend a boarding school. A thoughtful and serious child, she is blessed with both an abundance of kindness and imagination, and her father’s wealth. But not everyone in her new life appreciates Sara for who she is, as she discovers when her circumstances abruptly change. “Sara Crewe” was originally a short story, serialized in a children’s magazine. Its popularity led the author to expand it into an equally successful stage play, and from there it became this full-length novel. Much like Burnett’s later children’s book The Secret Garden, dramatic events and sharply-defined characters give A Little Princess the qualities of a modern fairy tale.",
+      "author": [
+       {
+        "name": "Frances Hodgson Burnett",
+        "links": [
+         {
+          "href": "https://openlibrary.org/authors/OL23767A",
+          "type": "text/html",
+          "rel": "author"
+         },
+         {
+          "href": "https://openlibrary.org/opds/authors/OL23767A",
+          "type": "application/opds+json",
+          "rel": "author"
+         }
+        ]
+       }
+      ],
+      "subject": [
+       {
+        "name": "Children's fiction",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Children%27s+fiction%22&title=Children%27s+fiction",
+          "type": "application/opds+json"
+         }
+        ]
+       },
+       {
+        "name": "Orphans, fiction",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Orphans%2C+fiction%22&title=Orphans%2C+fiction",
+          "type": "application/opds+json"
+         }
+        ]
+       }
+      ],
+      "numberOfPages": 224,
+      "aggregateRating": {
+       "@type": "AggregateRating",
+       "ratingValue": 4.2,
+       "ratingCount": 20,
+       "bestRating": 5,
+       "worstRating": 1
+      }
+     },
+     "links": [
+      {
+       "href": "https://openlibrary.org/opds/books/OL51733815M",
+       "type": "application/opds-publication+json",
+       "rel": "self"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL51733815M",
+       "type": "text/html",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL51733815M.json",
+       "type": "application/json",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://standardebooks.org/ebooks/frances-hodgson-burnett/a-little-princess/downloads/frances-hodgson-burnett_a-little-princess.epub",
+       "type": "application/epub+zip",
+       "rel": "http://opds-spec.org/acquisition/open-access",
+       "title": "standard_ebooks",
+       "properties": {
+        "availability": "available",
+        "indirectAcquisition": [
+         {
+          "type": "application/epub+zip",
+          "title": "standard_ebooks"
+         }
+        ]
+       }
+      }
+     ],
+     "images": [
+      {
+       "href": "https://covers.openlibrary.org/b/id/14634372-L.jpg",
+       "type": "image/jpeg",
+       "rel": "cover",
+       "width": 333,
+       "height": 500
+      }
+     ]
+    },
+    {
+     "metadata": {
+      "title": "How to stop worrrying and start living",
+      "@type": "http://schema.org/Book",
+      "language": [
+       "en"
+      ],
+      "description": "A practical, concrete, easy-to-read and inspiring handbook on conquering worry.",
+      "author": [
+       {
+        "name": "Dale Carnegie",
+        "links": [
+         {
+          "href": "https://openlibrary.org/authors/OL107569A",
+          "type": "text/html",
+          "rel": "author"
+         },
+         {
+          "href": "https://openlibrary.org/opds/authors/OL107569A",
+          "type": "application/opds+json",
+          "rel": "author"
+         }
+        ]
+       },
+       {
+        "name": "Kaneiji Dale",
+        "links": [
+         {
+          "href": "https://openlibrary.org/authors/OL7510923A",
+          "type": "text/html",
+          "rel": "author"
+         },
+         {
+          "href": "https://openlibrary.org/opds/authors/OL7510923A",
+          "type": "application/opds+json",
+          "rel": "author"
+         }
+        ]
+       }
+      ],
+      "subject": [
+       {
+        "name": "Success",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Success%22&title=Success",
+          "type": "application/opds+json"
+         }
+        ]
+       },
+       {
+        "name": "Worry",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Worry%22&title=Worry",
+          "type": "application/opds+json"
+         }
+        ]
+       }
+      ],
+      "numberOfPages": 348,
+      "aggregateRating": {
+       "@type": "AggregateRating",
+       "ratingValue": 4.14,
+       "ratingCount": 14,
+       "bestRating": 5,
+       "worstRating": 1
+      }
+     },
+     "links": [
+      {
+       "href": "https://openlibrary.org/opds/books/OL26643596M",
+       "type": "application/opds-publication+json",
+       "rel": "self"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL26643596M",
+       "type": "text/html",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL26643596M.json",
+       "type": "application/json",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://archive.org/services/loans/loan/?action=webpub&identifier=isbn_0671349007&opds=1",
+       "type": "application/opds-publication+json",
+       "rel": "alternate",
+       "title": "Internet Archive",
+       "properties": {
+        "authenticate": {
+         "href": "https://archive.org/services/loans/loan/?action=authentication_document",
+         "type": "application/opds-authentication+json"
+        }
+       }
+      }
+     ],
+     "images": [
+      {
+       "href": "https://covers.openlibrary.org/b/id/10829208-L.jpg",
+       "type": "image/jpeg",
+       "rel": "cover"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "metadata": {
+    "title": "Classic Books",
+    "description": "Beloved works from before 1950 that have been digitized and made available to the public as ebooks.",
+    "numberOfItems": 4711,
+    "itemsPerPage": 25,
+    "currentPage": 1
+   },
+   "links": [
+    {
+     "href": "https://openlibrary.org/opds/search?query=ddc%3A8%2A+first_publish_year%3A%5B%2A+TO+1950%5D+publish_year%3A%5B2000+TO+%2A%5D+NOT+public_scan_b%3Afalse+-subject%3A%22content_warning%3Acover%22&limit=25&sort=trending&title=Classic+Books",
+     "type": "application/opds+json",
+     "rel": "self"
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=ddc%3A8%2A+first_publish_year%3A%5B%2A+TO+1950%5D+publish_year%3A%5B2000+TO+%2A%5D+NOT+public_scan_b%3Afalse+-subject%3A%22content_warning%3Acover%22&limit=25&sort=trending&title=Classic+Books&page=1",
+     "type": "application/opds+json",
+     "rel": "first"
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=ddc%3A8%2A+first_publish_year%3A%5B%2A+TO+1950%5D+publish_year%3A%5B2000+TO+%2A%5D+NOT+public_scan_b%3Afalse+-subject%3A%22content_warning%3Acover%22&limit=25&sort=trending&title=Classic+Books&page=2",
+     "type": "application/opds+json",
+     "rel": "next"
+    },
+    {
+     "href": "https://openlibrary.org/opds/search?query=ddc%3A8%2A+first_publish_year%3A%5B%2A+TO+1950%5D+publish_year%3A%5B2000+TO+%2A%5D+NOT+public_scan_b%3Afalse+-subject%3A%22content_warning%3Acover%22&limit=25&sort=trending&title=Classic+Books&page=189",
+     "type": "application/opds+json",
+     "rel": "last"
+    }
+   ],
+   "publications": [
+    {
+     "metadata": {
+      "title": "A Little Princess",
+      "@type": "http://schema.org/Book",
+      "language": [
+       "en"
+      ],
+      "description": "Sara Crewe, the daughter of a widowed officer stationed in India, has come to London to attend a boarding school. A thoughtful and serious child, she is blessed with both an abundance of kindness and imagination, and her father’s wealth. But not everyone in her new life appreciates Sara for who she is, as she discovers when her circumstances abruptly change. “Sara Crewe” was originally a short story, serialized in a children’s magazine. Its popularity led the author to expand it into an equally successful stage play, and from there it became this full-length novel. Much like Burnett’s later children’s book The Secret Garden, dramatic events and sharply-defined characters give A Little Princess the qualities of a modern fairy tale.",
+      "author": [
+       {
+        "name": "Frances Hodgson Burnett",
+        "links": [
+         {
+          "href": "https://openlibrary.org/authors/OL23767A",
+          "type": "text/html",
+          "rel": "author"
+         },
+         {
+          "href": "https://openlibrary.org/opds/authors/OL23767A",
+          "type": "application/opds+json",
+          "rel": "author"
+         }
+        ]
+       }
+      ],
+      "subject": [
+       {
+        "name": "Children's fiction",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Children%27s+fiction%22&title=Children%27s+fiction",
+          "type": "application/opds+json"
+         }
+        ]
+       },
+       {
+        "name": "Orphans, fiction",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Orphans%2C+fiction%22&title=Orphans%2C+fiction",
+          "type": "application/opds+json"
+         }
+        ]
+       }
+      ],
+      "numberOfPages": 224,
+      "aggregateRating": {
+       "@type": "AggregateRating",
+       "ratingValue": 4.2,
+       "ratingCount": 20,
+       "bestRating": 5,
+       "worstRating": 1
+      }
+     },
+     "links": [
+      {
+       "href": "https://openlibrary.org/opds/books/OL51733815M",
+       "type": "application/opds-publication+json",
+       "rel": "self"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL51733815M",
+       "type": "text/html",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL51733815M.json",
+       "type": "application/json",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://standardebooks.org/ebooks/frances-hodgson-burnett/a-little-princess/downloads/frances-hodgson-burnett_a-little-princess.epub",
+       "type": "application/epub+zip",
+       "rel": "http://opds-spec.org/acquisition/open-access",
+       "title": "standard_ebooks",
+       "properties": {
+        "availability": "available",
+        "indirectAcquisition": [
+         {
+          "type": "application/epub+zip",
+          "title": "standard_ebooks"
+         }
+        ]
+       }
+      }
+     ],
+     "images": [
+      {
+       "href": "https://covers.openlibrary.org/b/id/14634372-L.jpg",
+       "type": "image/jpeg",
+       "rel": "cover",
+       "width": 333,
+       "height": 500
+      }
+     ]
+    },
+    {
+     "metadata": {
+      "title": "The Velveteen Rabbit",
+      "@type": "http://schema.org/Book",
+      "language": [
+       "en"
+      ],
+      "description": "By the time the Velveteen Rabbit is dirty, worn out, and about to be burned, he has almost given up hope of ever finding the magic called Real.",
+      "author": [
+       {
+        "name": "Margery Williams Bianco",
+        "links": [
+         {
+          "href": "https://openlibrary.org/authors/OL68455A",
+          "type": "text/html",
+          "rel": "author"
+         },
+         {
+          "href": "https://openlibrary.org/opds/authors/OL68455A",
+          "type": "application/opds+json",
+          "rel": "author"
+         }
+        ]
+       }
+      ],
+      "subject": [
+       {
+        "name": "Toys",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Toys%22&title=Toys",
+          "type": "application/opds+json"
+         }
+        ]
+       },
+       {
+        "name": "Fiction",
+        "links": [
+         {
+          "href": "https://openlibrary.org/opds/search?query=subject%3A%22Fiction%22&title=Fiction",
+          "type": "application/opds+json"
+         }
+        ]
+       }
+      ],
+      "numberOfPages": 40,
+      "aggregateRating": {
+       "@type": "AggregateRating",
+       "ratingValue": 4.12,
+       "ratingCount": 42,
+       "bestRating": 5,
+       "worstRating": 1
+      }
+     },
+     "links": [
+      {
+       "href": "https://openlibrary.org/opds/books/OL12242218M",
+       "type": "application/opds-publication+json",
+       "rel": "self"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL12242218M",
+       "type": "text/html",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://openlibrary.org/books/OL12242218M.json",
+       "type": "application/json",
+       "rel": "alternate"
+      },
+      {
+       "href": "https://archive.org/services/loans/loan/?action=webpub&identifier=velveteenrabbit00marg_1&opds=1",
+       "type": "application/opds-publication+json",
+       "rel": "alternate",
+       "title": "Internet Archive",
+       "properties": {
+        "authenticate": {
+         "href": "https://archive.org/services/loans/loan/?action=authentication_document",
+         "type": "application/opds-authentication+json"
+        }
+       }
+      }
+     ],
+     "images": [
+      {
+       "href": "https://covers.openlibrary.org/b/id/2930004-L.jpg",
+       "type": "image/jpeg",
+       "rel": "cover",
+       "width": 309,
+       "height": 475
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "facets": [
+  {
+   "metadata": {
+    "title": "Availability"
+   },
+   "links": [
+    {
+     "title": "Everything",
+     "href": "https://openlibrary.org/opds/",
+     "type": "application/opds+json",
+     "rel": [
+      "self",
+      "https://openlibrary.org/opds/rel/facet/availability"
+     ],
+     "properties": {
+      "active": true
+     }
+    },
+    {
+     "title": "Borrow",
+     "href": "https://openlibrary.org/opds/?mode=ebooks",
+     "type": "application/opds+json",
+     "rel": "https://openlibrary.org/opds/rel/facet/availability"
+    },
+    {
+     "title": "Open Access",
+     "href": "https://openlibrary.org/opds/?mode=open_access",
+     "type": "application/opds+json",
+     "rel": "https://openlibrary.org/opds/rel/facet/availability"
+    }
+   ]
+  },
+  {
+   "metadata": {
+    "title": "Language"
+   },
+   "links": [
+    {
+     "title": "All",
+     "href": "https://openlibrary.org/opds/",
+     "type": "application/opds+json",
+     "rel": [
+      "self",
+      "https://openlibrary.org/opds/rel/facet/language"
+     ],
+     "properties": {
+      "active": true
+     }
+    },
+    {
+     "title": "Abkhaz",
+     "href": "https://openlibrary.org/opds/?language=ab",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 1
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    },
+    {
+     "title": "Afrikaans",
+     "href": "https://openlibrary.org/opds/?language=af",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 333
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    },
+    {
+     "title": "Akan",
+     "href": "https://openlibrary.org/opds/?language=ak",
+     "type": "application/opds+json",
+     "properties": {
+      "numberOfItems": 1
+     },
+     "rel": "https://openlibrary.org/opds/rel/facet/language"
+    }
+   ]
+  }
+ ]
+}

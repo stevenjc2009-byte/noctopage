@@ -1,0 +1,30 @@
+{
+  "metadata": {"title": "Example navigation"},
+  "links": [
+    {"rel": "self", "href": "https://example.com/opds/root.json", "type": "application/opds+json"},
+    {"rel": "search", "href": "https://example.com/opds/search{?query}", "type": "application/opds+json", "templated": true}
+  ],
+  "navigation": [
+    {"href": "/opds/new.json", "title": "New Publications", "type": "application/opds+json", "rel": "current"},
+    {"href": "/opds/popular.json", "title": "Popular Publications", "type": "application/opds+json", "rel": "http://opds-spec.org/sort/popular"}
+  ],
+  "groups": [
+    {
+      "metadata": {"title": "Staff picks"},
+      "links": [{"rel": "self", "href": "/opds/staff.json", "type": "application/opds+json", "title": "Staff picks"}],
+      "publications": [
+        {
+          "metadata": {"title": "Pick One", "author": {"name": "Anna Author"}},
+          "links": [{"rel": "http://opds-spec.org/acquisition/open-access", "href": "/files/one.cbz", "type": "application/vnd.comicbook+zip"}],
+          "images": [{"href": "/img/one.jpg", "type": "image/jpeg"}]
+        }
+      ]
+    },
+    {
+      "metadata": {"title": "Genres"},
+      "navigation": [
+        {"href": "/opds/genre/scifi.json", "title": "Science Fiction", "type": "application/opds+json"}
+      ]
+    }
+  ]
+}

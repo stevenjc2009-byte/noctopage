@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Komga</ShortName>
+  <Description>Search for series or books</Description>
+  <Url type="text/html" template="/opds/v1.2/search?search={searchTerms}"/>
+  <Url type="application/atom+xml;profile=opds-catalog;kind=acquisition" template="/opds/v1.2/search?search={searchTerms}&amp;page={startPage?}"/>
+</OpenSearchDescription>

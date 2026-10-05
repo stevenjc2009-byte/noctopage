@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:relevance="http://a9.com/-/opensearch/extensions/relevance/1.0/">
+<id>http://www.gutenberg.org/ebooks/search.opds/?query=dickens</id>
+<updated>2026-10-05T19:22:45Z</updated>
+<title>Books: dickens</title>
+<subtitle>Free eBooks since 1971.</subtitle>
+<author>
+<name>Project Gutenberg</name>
+<uri>https://www.gutenberg.org</uri>
+<email>webmaster@gutenberg.org</email>
+</author>
+<icon>https://www.gutenberg.org/gutenberg/favicon.ico</icon>
+<link rel="search" type="application/opensearchdescription+xml" title="Project Gutenberg Catalog Search" href="https://www.gutenberg.org/catalog/osd-books.xml"/>
+<link rel="self" title="This Page" type="application/atom+xml;profile=opds-catalog" href="/ebooks/search.opds/?query=dickens"/>
+<link rel="alternate" type="text/html" title="HTML Page" href="/ebooks/search/?query=dickens"/>
+<link rel="start" title="Start Page" type="application/atom+xml;profile=opds-catalog" href="/ebooks.opds/"/>
+<link rel="next" title="Next Page" type="application/atom+xml;profile=opds-catalog" href="/ebooks/search.opds/?query=dickens&amp;start_index=26"/>
+<opensearch:itemsPerPage>25</opensearch:itemsPerPage>
+<opensearch:startIndex>1</opensearch:startIndex>
+<entry>
+<updated>2026-10-05T19:22:45Z</updated>
+<id>https://www.gutenberg.org/ebooks/authors/search.opds/?query=dickens</id>
+<title>Authors</title>
+<content type="text">5 author names match your search.</content>
+<link type="application/atom+xml;profile=opds-catalog" rel="subsection" href="/ebooks/authors/search.opds/?query=dickens"/>
+<link type="image/png" rel="http://opds-spec.org/image/thumbnail" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAA5JREFUeJxjYBgFo4AEAAIAAAF7HyoXAAAAAElFTkSuQmCC"/>
+</entry>
+<entry>
+<updated>2026-10-05T19:22:45Z</updated>
+<id>https://www.gutenberg.org/ebooks/subjects/search.opds/?query=dickens</id>
+<title>Subjects</title>
+<content type="text">27 subject headings match your search.</content>
+<link type="application/atom+xml;profile=opds-catalog" rel="subsection" href="/ebooks/subjects/search.opds/?query=dickens"/>
+<link type="image/png" rel="http://opds-spec.org/image/thumbnail" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAA5JREFUeJxjYBgFo4AEAAIAAAF7HyoXAAAAAElFTkSuQmCC"/>
+</entry>
+<entry>
+<updated>2026-10-05T19:22:45Z</updated>
+<id>https://www.gutenberg.org/ebooks/1400.opds</id>
+<title>Great Expectations</title>
+<content type="text">Charles Dickens</content>
+<link type="application/atom+xml;profile=opds-catalog" rel="subsection" href="/ebooks/1400.opds"/>
+<link type="image/png" rel="http://opds-spec.org/image/thumbnail" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAA5JREFUeJxjYBgFo4AEAAIAAAF7HyoXAAAAAElFTkSuQmCC"/>
+</entry>
+<entry>
+<updated>2026-10-05T19:22:45Z</updated>
+<id>https://www.gutenberg.org/ebooks/46.opds</id>
+<title>A Christmas Carol in Prose; Being a Ghost Story of Christmas</title>
+<content type="text">Charles Dickens</content>
+<link type="application/atom+xml;profile=opds-catalog" rel="subsection" href="/ebooks/46.opds"/>
+<link type="image/png" rel="http://opds-spec.org/image/thumbnail" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAA5JREFUeJxjYBgFo4AEAAIAAAF7HyoXAAAAAElFTkSuQmCC"/>
+</entry>
+</feed>

@@ -1,0 +1,8 @@
+src/net/xml.c
+src/net/xml_util.c
+src/net/url.c
+src/net/opds.c
+src/net/opds_build.c
+src/net/opds_atom.c
+src/net/opds_text.c
+src/net/opds_json.c -Ithird_party/cjson
