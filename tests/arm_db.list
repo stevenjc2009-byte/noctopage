@@ -1,0 +1,3 @@
+src/lib/db.c -Ithird_party/sqlite
+src/lib/db_tables.c -Ithird_party/sqlite
+src/lib/bookid.c

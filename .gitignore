@@ -7,3 +7,6 @@ third_party/*.tar.gz
 __pycache__/
 third_party/mupdf/host/
 third_party/mupdf/vita/
+third_party/libarchive/src/
+third_party/libarchive/build/
+third_party/libarchive/vita/

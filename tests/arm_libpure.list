@@ -1,0 +1,3 @@
+src/lib/formats.c
+src/lib/scan.c
+src/comic/pagelist.c

@@ -44,6 +44,18 @@ CFLAGS      += -I$(VITASDK)/arm-vita-eabi/include/freetype2
 MUPDF_LIBS  := -Lthird_party/mupdf/vita/lib -lmupdf -lmupdf-third
 MUPDF_DEPS  := -lharfbuzz -lfreetype -lbz2 -lstdc++ -ljpeg -lz
 
+# ---- libarchive WITH liblzma (built by tools/build_libarchive.sh) --------------------
+# The VitaSDK's own libarchive.a has no LZMA, so .cb7/.7z fail on the Vita ("LZMA codec is
+# unsupported"). The vendored build goes first: its -I is prepended, so it precedes the SDK
+# include dir given at the top, and its -L precedes the SDK lib dir.
+LIBARCHIVE_LIB := third_party/libarchive/vita/lib/libarchive.a
+ifeq ($(wildcard $(LIBARCHIVE_LIB)),)
+$(warning $(LIBARCHIVE_LIB) missing: run tools/build_libarchive.sh; falling back to the SDK libarchive, which has NO LZMA (CB7 fails))
+else
+CFLAGS          := -Ithird_party/libarchive/vita/include $(CFLAGS)
+LIBARCHIVE_LIBS := -Lthird_party/libarchive/vita/lib
+endif
+
 # ---- Optional third-party sources compiled straight into the app ---------------
 # Compiled with relaxed warnings (-w): we do not own that code, -Werror stays on ours.
 EXTRA_OBJS :=
@@ -95,7 +107,7 @@ DEPS += $(EXTRA_OBJS:.o=.d)
 #       -> vita2d(+freetype, png) -> system stubs -> libc
 LIBS := $(TLS_LIBS) \
 	$(MUPDF_LIBS) \
-	-larchive -llzma -lbz2 -lzstd \
+	$(LIBARCHIVE_LIBS) -larchive -llzma -lbz2 -lzstd \
 	-lwebp -lpng16 -lturbojpeg \
 	$(MUPDF_DEPS) \
 	-lvita2d -lfreetype -lbz2 -lpng16 -lz \
