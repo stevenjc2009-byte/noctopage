@@ -5,6 +5,7 @@
 #include "app.h"
 
 extern const screen_t screen_mybooks;
+extern const screen_t screen_private;
 extern const screen_t screen_catalog;
 extern const screen_t screen_history;
 extern const screen_t screen_downloads;

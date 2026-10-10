@@ -19,6 +19,9 @@
  * Returns 0, or -1 with a message in err (when errcap > 0). Thread-safe. */
 int coverimg_make(const char *path, int db_kind, uint8_t *out, char *err, size_t errcap);
 
+/* Decode a standalone image into a thumbnail, rejecting files over 16 MiB. */
+int coverimg_file(const char *path, uint8_t *out, char *err, size_t errcap);
+
 /* Write / read a thumbnail file. read returns 0 only for a complete file of the right size
  * and header; anything else (missing, short, wrong magic or size) is -1. */
 int coverimg_save(const char *file, const uint8_t *rgba);

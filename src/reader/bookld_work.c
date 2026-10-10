@@ -7,6 +7,8 @@
  * job in progress (an open, a layout or one page) before the worker sees quit. */
 #include "reader/bookld_priv.h"
 
+#include "core/affinity.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -163,6 +165,29 @@ static void resolve(bookld_t *b)
 	pthread_mutex_unlock(&b->mu);
 }
 
+/* Text search of the current generation, from the requested start page. The answer is
+ * only published when no relayout slipped in meanwhile (page numbers are per-gen). */
+static void find(bookld_t *b)
+{
+	char query[BOOKLD_FIND_MAX];
+	pthread_mutex_lock(&b->mu);
+	memcpy(query, b->find_query, sizeof query);
+	int start = b->find_start, count = b->count, gen = b->gen;
+	b->find_pending = 0;
+	pthread_mutex_unlock(&b->mu);
+	int p = -1;
+	if (query[0] && count > 0) {
+		if (start < 0) start = 0;
+		if (start < count) p = mdoc_find_page(b->doc, start, query);
+	}
+	pthread_mutex_lock(&b->mu);
+	if (gen == b->gen) {
+		b->find_page = p;
+		b->find_serial++;
+	}
+	pthread_mutex_unlock(&b->mu);
+}
+
 /* img as exactly BOOKLD_PAGE_W x BOOKLD_PAGE_H: itself when it already is, else a new
  * paper-filled buffer with img centred on it (cropped when larger). Frees img.rgba either
  * way unless returned; NULL on out of memory. */
@@ -295,6 +320,7 @@ static void render_wish_locked(bookld_t *b, int i)
 void *bookld_worker(void *arg)
 {
 	bookld_t *b = arg;
+	affinity_use_all_cores();
 	if (open_book(b)) {
 		pthread_mutex_lock(&b->mu);
 		while (!b->quit) {
@@ -308,6 +334,11 @@ void *bookld_worker(void *arg)
 			} else if (b->resolve_pending) {
 				pthread_mutex_unlock(&b->mu);
 				resolve(b);
+				pthread_mutex_lock(&b->mu);
+				continue;
+			} else if (b->find_pending) {
+				pthread_mutex_unlock(&b->mu);
+				find(b);
 				pthread_mutex_lock(&b->mu);
 				continue;
 			} else {

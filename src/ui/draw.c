@@ -60,9 +60,21 @@ void draw_border(int x, int y, int w, int h, int t, unsigned int color)
 
 void draw_selector(int x, int y, int w, int h, uint64_t now_ms)
 {
-	draw_border(x, y, w, h, 3, THEME_SELECTOR);
-	int a = (int)(100.0f * fabsf(sinf((float)now_ms / 500.0f)));
-	draw_border(x, y, w, h, 3, RGBA8(255, 255, 255, a));
+	(void)now_ms;
+	draw_border(x, y, w, h, 2, THEME_SELECTOR);
+}
+
+void draw_cover_fit(void *tex, int x, int y, int w, int h)
+{
+	vita2d_texture *t = tex;
+	float tw, th, s;
+
+	if (!t || w <= 0 || h <= 0) return;
+	tw = (float)vita2d_texture_get_width(t);
+	th = (float)vita2d_texture_get_height(t);
+	if (tw <= 0 || th <= 0) return;
+	s = w / tw < h / th ? w / tw : h / th;
+	vita2d_draw_texture_scale(t, (float)x + (w - tw * s) / 2, (float)y + (h - th * s) / 2, s, s);
 }
 
 /* ---- glyphs ------------------------------------------------------------------ */

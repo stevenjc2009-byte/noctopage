@@ -33,6 +33,7 @@ bookld_t *bookld_open(const char *path, const bookld_style_t *st, const char *re
 	b->status = BOOKLD_OPENING;
 	b->err_page = -1;
 	b->jump_page = -1;
+	b->find_page = -1;
 	b->prev_keep = -1;
 	if (st) {
 		b->style = *st;
@@ -94,6 +95,7 @@ void bookld_info(bookld_t *b, bookld_info_t *out)
 	if (!b) {
 		out->status = BOOKLD_FAILED;
 		out->jump_page = -1;
+		out->find_page = -1;
 		return;
 	}
 	pthread_mutex_lock(&b->mu);
@@ -104,6 +106,8 @@ void bookld_info(bookld_t *b, bookld_info_t *out)
 	out->busy = b->busy;
 	out->jump_serial = b->jump_serial;
 	out->jump_page = b->jump_page;
+	out->find_serial = b->find_serial;
+	out->find_page = b->find_page;
 	if (b->status == BOOKLD_FAILED) snprintf(out->err, sizeof out->err, "%s", b->err);
 	pthread_mutex_unlock(&b->mu);
 }
@@ -198,6 +202,17 @@ void bookld_resolve(bookld_t *b, const char *pos)
 	pthread_mutex_lock(&b->mu);
 	snprintf(b->resolve_pos, sizeof b->resolve_pos, "%s", pos ? pos : "");
 	b->resolve_pending = 1; /* a second call before the worker gets to it replaces this one */
+	pthread_cond_signal(&b->cv);
+	pthread_mutex_unlock(&b->mu);
+}
+
+void bookld_find(bookld_t *b, const char *query, int start)
+{
+	if (!b) return;
+	pthread_mutex_lock(&b->mu);
+	snprintf(b->find_query, sizeof b->find_query, "%s", query ? query : "");
+	b->find_start = start;
+	b->find_pending = 1; /* a second call before the worker gets to it replaces this one */
 	pthread_cond_signal(&b->cv);
 	pthread_mutex_unlock(&b->mu);
 }

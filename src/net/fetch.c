@@ -1,6 +1,9 @@
 #include "net/fetch.h"
 
+#include "core/affinity.h"
+
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -69,11 +72,29 @@ static slot_t *newest_queued(void)
 }
 
 /* Worker, without the lock: the slot's request fields do not change while it runs. */
+static int local_body(const char *path, http_doc_t *out, char *err)
+{
+	FILE *f = fopen(path, "rb");
+	if (!f) { strcpy(err, "Cannot open cover image"); return -1; }
+	if (fseek(f, 0, SEEK_END) || ftell(f) <= 0 || ftell(f) > FETCH_MAX_BODY) {
+		fclose(f); strcpy(err, "Cover image must be under 4 MB"); return -1;
+	}
+	size_t n = (size_t)ftell(f);
+	char *data = malloc(n + 1);
+	if (!data || fseek(f, 0, SEEK_SET) || fread(data, 1, n, f) != n) {
+		free(data); fclose(f); strcpy(err, "Cannot read cover image"); return -1;
+	}
+	fclose(f); data[n] = 0; out->data = data; out->len = n;
+	return 0;
+}
+
 static int run(slot_t *s, fetch_result_t *r)
 {
 	http_auth_t a = { s->user, s->pass };
 	memset(r, 0, sizeof *r);
-	if (http_get(s->url, &a, FETCH_MAX_BODY, &s->cancel, &r->doc, r->err, sizeof r->err) != 0) return -1;
+	if (s->img == 2) {
+		if (local_body(s->url, &r->doc, r->err) < 0) return -1;
+	} else if (http_get(s->url, &a, FETCH_MAX_BODY, &s->cancel, &r->doc, r->err, sizeof r->err) != 0) return -1;
 	if (!s->img) return 0;
 	int rc = s->cancel ? -1 : img_decode((const uint8_t *)r->doc.data, r->doc.len, s->max_w, s->max_h,
 	                                      &r->img, r->err, sizeof r->err);
@@ -87,6 +108,7 @@ static int run(slot_t *s, fetch_result_t *r)
 static void *worker(void *arg)
 {
 	(void)arg;
+	affinity_use_all_cores();
 	pthread_mutex_lock(&g_mu);
 	for (;;) {
 		slot_t *s = NULL;
@@ -181,6 +203,11 @@ int fetch_get(const char *url, const http_auth_t *auth)
 int fetch_image(const char *url, const http_auth_t *auth, int max_w, int max_h)
 {
 	return queue(url, auth, 1, max_w, max_h);
+}
+
+int fetch_file_image(const char *path, int max_w, int max_h)
+{
+	return queue(path, NULL, 2, max_w, max_h);
 }
 
 static fetch_state_t state_of(const slot_t *s)

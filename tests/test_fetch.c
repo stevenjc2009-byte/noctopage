@@ -231,6 +231,27 @@ static void test_images(void)
 	fetch_result_free(&r);
 }
 
+static void test_local_images(void)
+{
+    char path[1024]; fetch_result_t r;
+    snprintf(path, sizeof path, "%s/fixtures/tall_800x9000.png", g_tests);
+    int id = fetch_file_image(path,100,100);
+    CHECK_INT(wait_for(id), FETCH_DONE);
+    CHECK_INT(fetch_take(id,&r), FETCH_DONE);
+    CHECK(r.img.rgba != NULL && r.img.h == 100);
+    CHECK_INT(r.img.src_w,800);
+    fetch_result_free(&r);
+    snprintf(path, sizeof path, "%s/fixtures/minimal.txt", g_tests);
+    id = fetch_file_image(path,100,100);
+    CHECK_INT(wait_for(id), FETCH_FAILED);
+    CHECK_INT(fetch_take(id,&r), FETCH_FAILED);
+    CHECK(r.img.rgba == NULL && r.err[0]);
+    fetch_result_free(&r);
+    id = fetch_file_image("no-such-cover.png",100,100);
+    CHECK_INT(wait_for(id), FETCH_FAILED);
+    fetch_forget(id);
+}
+
 static void test_slots_and_stop(void)
 {
 	int ids[FETCH_SLOTS], n = 0;
@@ -262,6 +283,7 @@ int main(int argc, char **argv)
 		test_basic();
 		test_order();
 		test_images();
+		test_local_images();
 		test_slots_and_stop();
 	}
 	fetch_stop();

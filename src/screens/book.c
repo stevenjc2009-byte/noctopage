@@ -5,9 +5,11 @@
 #include "screens/book_priv.h"
 
 #include "core/log.h"
+#include "lib/reading_clock.h"
 #include "core/prefs.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define SAVE_IDLE_MS 1500
@@ -15,6 +17,16 @@
 
 book_t B;
 static int g_open;
+static reading_clock_t g_clock;
+static void reading_flush(void)
+{
+	if (!g_clock.milliseconds && !g_clock.pages) return;
+	if (db_reading_add(B.book.id, g_clock.milliseconds, g_clock.pages) >= 0) {
+		g_clock.milliseconds = 0;
+		g_clock.pages = 0;
+	}
+}
+
 
 static const uint32_t INK[BOOK_THEMES] = {0x000000, 0x5B4636, 0xC8C8C8};
 static const uint32_t PAPER[BOOK_THEMES] = {0xFFFFFF, 0xF4ECD8, 0x000000};
@@ -25,14 +37,22 @@ uint32_t book_paper(void) { return PAPER[B.theme]; }
 const char *book_theme_name(void) { return THEME_NAMES[B.theme]; }
 int book_is_open(void) { return g_open; }
 
+static long book_setting(const char *key,long def)
+{
+ char v[32]; return db_effective_setting(B.book.id,key,v,sizeof v)==1 ? atol(v):prefs_get_int("book",key,def);
+}
+static void book_setting_save(const char *key,long value)
+{
+ char v[32]; snprintf(v,sizeof v,"%ld",value); db_book_setting_set(B.book.id,key,v);
+}
 static void load_style(void)
 {
-	B.style.font_px = (int)prefs_get_int("book", "font_px", 24);
-	B.style.margin_px = (int)prefs_get_int("book", "margin_px", 32);
-	B.style.line_spacing = (float)prefs_get_int("book", "spacing10", 14) / 10.0f;
-	B.style.font_family = (int)prefs_get_int("book", "family", 0) ? 1 : 0;
+	B.style.font_px = (int)book_setting("font_px", 24);
+	B.style.margin_px = (int)book_setting("margin_px", 32);
+	B.style.line_spacing = (float)book_setting("spacing10", 14) / 10.0f;
+	B.style.font_family = (int)book_setting("family", 0) ? 1 : 0;
 	bookld_style_clamp(&B.style);
-	long theme = prefs_get_int("book", "theme", 0);
+	long theme = book_setting("theme", 0);
 	B.theme = theme >= 0 && theme < BOOK_THEMES ? (int)theme : 0;
 	long dim = prefs_get_int("reader", "dim", 0);
 	B.dim = dim >= 0 && dim < BOOK_DIM_LEVELS ? (int)dim : 0;
@@ -42,6 +62,7 @@ void book_open(const db_book_t *b)
 {
 	if (g_open) book_close();
 	memset(&B, 0, sizeof B);
+	memset(&g_clock, 0, sizeof g_clock);
 	B.book = *b;
 	load_style();
 	tapsm_init(&B.tap, 1);
@@ -59,12 +80,13 @@ static void save(int force)
 	double progress = B.count > 1 ? (double)B.page / (double)(B.count - 1) : 1.0;
 	if (db_set_progress(B.book.id, B.page, B.count, B.pos, progress) < 0)
 		log_printf("book: save: %s", db_last_error());
-	snprintf(B.saved_pos, sizeof B.saved_pos, "%s", B.pos);
+	else snprintf(B.saved_pos, sizeof B.saved_pos, "%s", B.pos);
 }
 
 void book_close(void)
 {
 	if (!g_open) return;
+	reading_flush();
 	save(1);
 	book_menu_close();
 	book_tex_clear();
@@ -89,10 +111,10 @@ void book_goto(int page)
 void book_restyle(void)
 {
 	bookld_style_clamp(&B.style);
-	prefs_set_int("book", "font_px", B.style.font_px);
-	prefs_set_int("book", "margin_px", B.style.margin_px);
-	prefs_set_int("book", "spacing10", (long)(B.style.line_spacing * 10.0f + 0.5f));
-	prefs_set_int("book", "family", B.style.font_family);
+	book_setting_save("font_px", B.style.font_px);
+	book_setting_save("margin_px", B.style.margin_px);
+	book_setting_save("spacing10", (long)(B.style.line_spacing * 10.0f + 0.5f));
+	book_setting_save("family", B.style.font_family);
 	bookld_set_style(B.bl, &B.style, B.page);
 	log_printf("book: style %d px, margin %d, spacing %.1f, family %d", B.style.font_px,
 	           B.style.margin_px, (double)B.style.line_spacing, B.style.font_family);
@@ -114,10 +136,18 @@ static void follow_layout(void)
 		B.jump_serial = B.info.jump_serial;
 		if (B.info.jump_page >= 0) book_goto(B.info.jump_page);
 	}
+	if (B.info.find_serial != B.find_serial) {
+		B.find_serial = B.info.find_serial;
+		if (B.info.find_page >= 0)
+			book_goto(B.info.find_page);
+		else
+			log_printf("book: text not found");
+	}
 }
 
 static void step(int dir)
 {
+	if (dir > 0 && B.page == B.count - 1) { book_menu_open(); return; }
 	book_goto(B.page + dir);
 }
 
@@ -130,7 +160,7 @@ static void buttons(const input_t *in)
 	}
 	if (in->pressed & IN_SQUARE) {
 		B.theme = (B.theme + 1) % BOOK_THEMES;
-		prefs_set_int("book", "theme", B.theme);
+		book_setting_save("theme", B.theme);
 	}
 	if ((in->pressed & IN_CONFIRM) && B.overlay) book_menu_open();
 	if (in->pressed & (IN_RIGHT | IN_R | IN_DOWN)) step(1);
@@ -162,6 +192,7 @@ static void touch(const input_t *in)
 		if (ev[i].type == GESTURE_DRAG) B.swipe_dx += (float)ev[i].dx;
 		if (ev[i].type != GESTURE_TAP) continue;
 		if (B.overlay) {
+			if (ev[i].x >= 902 && ev[i].y >= 8 && ev[i].y < 56) { book_menu_open(); B.swipe_dx = 0; return; }
 			if (ev[i].y >= 80 && ev[i].y < 544 - 80) B.overlay = 0;
 			continue;
 		}
@@ -189,6 +220,10 @@ void book_update(const input_t *in)
 {
 	if (!g_open) return;
 	B.now = in->now_ms;
+	reading_clock_tick(&g_clock, in->now_ms, B.page, (B.count > 0 && B.failed_page != B.page) && !book_menu_is_open(),
+	                   in->pressed || in->touch_count || in->lx < 108 || in->lx > 148 ||
+	                   in->ly < 108 || in->ly > 148);
+	if (g_clock.milliseconds >= 30000 || g_clock.pages >= 10) reading_flush();
 	if (B.bl) follow_layout();
 	if (book_menu_is_open()) {
 		book_menu_update(in);

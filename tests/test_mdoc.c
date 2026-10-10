@@ -350,6 +350,31 @@ static void test_errors(void)
     CHECK(mdoc_page_count(NULL) == -1 && mdoc_set_layout(NULL, &LAY_A) == -1);
 }
 
+static void test_find(void)
+{
+    mdoc_t *d = must_open(GEN_DIR "gen.epub");
+    char t[65536];
+    int n, p;
+
+    CHECK_INT(mdoc_set_layout(d, &LAY_A), 0);
+    n = mdoc_page_count(d);
+    CHECK(n > 2);
+    p = mdoc_find_page(d, 0, "c3p39"); /* unique last-paragraph marker */
+    CHECK(p >= 0 && p < n);
+    if (p >= 0) {
+        CHECK(mdoc__page_text(d, p, t, sizeof t) > 0 && strstr(t, "c3p39") != NULL);
+        CHECK_INT(mdoc_find_page(d, p, "c3p39"), p);
+        CHECK_INT(mdoc_find_page(d, 0, "C3P39"), p); /* case-insensitive */
+    }
+    CHECK_INT(mdoc_find_page(d, n - 1, "c1p00"), -1); /* before the only match */
+    CHECK_INT(mdoc_find_page(d, 0, "no such words anywhere"), -1);
+    CHECK_INT(mdoc_find_page(d, 0, ""), -1);
+    CHECK_INT(mdoc_find_page(NULL, 0, "x"), -1);
+    CHECK_INT(mdoc_find_page(d, -1, "x"), -1);
+    CHECK_INT(mdoc_find_page(d, n, "x"), -1);
+    mdoc_close(d);
+}
+
 int main(void)
 {
     const mdoc_layout_t big = {960, 544, 20.0f, 24.0f, 1.5f, 0};
@@ -361,6 +386,7 @@ int main(void)
     CHECK(write_file(GEN_DIR "cover.fb2", COVER_FB2, sizeof COVER_FB2 - 1));
     test_open_meta();
     test_pages_and_positions();
+    test_find();
     test_render();
     test_toc_cover();
     test_threads();

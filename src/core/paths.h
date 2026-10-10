@@ -5,6 +5,7 @@
 #define PATH_DATA_ROOT   "ux0:data/noctopage"
 #define PATH_DB          "ux0:data/noctopage/library.db"
 #define PATH_THUMBS_DIR  "ux0:data/noctopage/thumbs"
+#define PATH_STREAM_DIR  "ux0:data/noctopage/stream" /* cached OPDS-PSE page bodies */
 #define PATH_SETTINGS    "ux0:data/noctopage/settings.ini"
 #define PATH_BOOKS_DIR   "ux0:books"
 #define PATH_LOG         "ux0:data/noctopage/log.txt"

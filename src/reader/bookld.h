@@ -43,6 +43,8 @@ typedef struct {
 	int busy;        /* a relayout is running (the old generation stays readable) */
 	int jump_serial; /* increments when a bookld_resolve finished ... */
 	int jump_page;   /* ... with this page in the then-current generation (-1 = unparsable) */
+	int find_serial; /* increments when a bookld_find finished ... */
+	int find_page;   /* ... with the first matching page at/after the start (-1 = none) */
 	char err[160];   /* BOOKLD_FAILED: why */
 } bookld_info_t;
 
@@ -86,6 +88,13 @@ void bookld_release(bookld_t *b, const bookld_page_t *p);
 /* Resolve an mdoc position string (a bookmark) in the background; the answer arrives in
  * bookld_info as jump_serial + 1 and jump_page. */
 void bookld_resolve(bookld_t *b, const char *pos);
+
+#define BOOKLD_FIND_MAX 128 /* longest searchable query, bytes */
+
+/* Find query in the background from start page on; the answer arrives in bookld_info
+ * as find_serial + 1 and find_page. A second call before the worker gets to it
+ * replaces the first. */
+void bookld_find(bookld_t *b, const char *query, int start);
 
 /* Copy of the table of contents for the current generation (pages resolved for it).
  * Returns items written (<= max), 0 when the book has none or no layout is ready. */

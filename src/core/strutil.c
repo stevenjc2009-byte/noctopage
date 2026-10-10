@@ -131,3 +131,13 @@ const char *path_ext(const char *path)
         return base + strlen(base);
     return dot + 1;
 }
+
+int str_page_number(const char *s,int max,int *out)
+{
+ while(*s==' ' || *s=='\t') s++;
+ if(*s<'0' || *s>'9' || max<1) return 0;
+ int n=0; while(*s>='0' && *s<='9') { int d=*s++-'0'; if(n>(max-d)/10 || d>max) return 0; n=n*10+d; }
+ while(*s==' ' || *s=='\t') s++;
+ if(*s || n<1 || n>max) return 0;
+ *out=n; return 1;
+}

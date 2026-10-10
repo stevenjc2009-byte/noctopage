@@ -60,6 +60,7 @@ void reader_goto(int page, int pan)
 	} else {
 		R.view.zoom = 1.0f;
 		R.view.pan_x = R.view.pan_y = 0;
+		R.swipe_dx = 0; /* a stored-up swipe must not fire on the new page */
 		R.pending_pan = pan;
 	}
 	reader_wish();
@@ -68,7 +69,10 @@ void reader_goto(int page, int pan)
 void reader_step(int dir)
 {
 	int to = reader_spread_step(R.page, dir);
-	if (to < 0) return;
+	if (to < 0) {
+		if (dir > 0) reader_menu_open();
+		return;
+	}
 	reader_goto(to, dir > 0 ? 1 : -1);
 }
 
@@ -196,30 +200,31 @@ void reader_wish(void)
 		int first = R.page, last = R.page;
 		if (R.items) strip_visible(R.items, R.count, R.scroll, SCREEN_H, &first, &last);
 		if (first < 0) first = last = R.page;
-		for (int p = first; p <= last; p++) n = add(w, n, p, box);
-		if (box != BOX_W) /* low-res stand-ins while the sharp copies decode */
-			for (int p = first; p <= last; p++) n = add(w, n, p, BOX_W);
+		for (int p = first; p <= last; p++) n = add(w, n, p, BOX_W);
+		if (box != BOX_W)
+			for (int p = first; p <= last; p++) n = add(w, n, p, box);
 		n = add(w, n, last + 1, BOX_W);
 		n = add(w, n, last + 2, BOX_W);
 		n = add(w, n, first - 1, BOX_W);
 	} else {
 		int p[2], shown = reader_shown(p);
+		for (int i = 0; i < shown; i++) n = add(w, n, p[i], BOX_W);
 		if (box != BOX_W)
 			for (int i = 0; i < shown; i++) n = add(w, n, p[i], box);
-		n = add(w, n, R.page, BOX_W);
 		n = add(w, n, R.page + 1, BOX_W);
-		n = add(w, n, R.page - 1, BOX_W);
 		n = add(w, n, R.page + 2, BOX_W);
 		if (reader_spreads_on()) {
 			n = add(w, n, R.page + 3, BOX_W);
-			n = add(w, n, R.page - 2, BOX_W);
 		}
+		n = add(w, n, R.page - 1, BOX_W);
+		if (reader_spreads_on()) n = add(w, n, R.page - 2, BOX_W);
 	}
 	loader_want(R.ld, w, n);
 }
 
 void reader_save(int force)
 {
+	if (R.stream) return; /* streams have no library row to save to */
 	if (R.count <= 0 || R.page == R.saved_page) return;
 	if (!force && R.now - R.changed_at < SAVE_IDLE_MS) return;
 	char loc[32];
@@ -227,5 +232,5 @@ void reader_save(int force)
 	double progress = R.count > 1 ? (double)R.page / (double)(R.count - 1) : 1.0;
 	if (db_set_progress(R.book.id, R.page, R.count, loc, progress) < 0)
 		log_printf("reader: save: %s", db_last_error());
-	R.saved_page = R.page;
+	else R.saved_page = R.page;
 }

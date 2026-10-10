@@ -2,7 +2,9 @@
 
 #include "comic/folder.h"
 #include "comic/pagelist.h"
+#include "core/affinity.h"
 #include "core/log.h"
+#include "core/paths.h"
 #include "core/strutil.h"
 #include "lib/bookid.h"
 #include "lib/db.h"
@@ -15,7 +17,7 @@
 #include <string.h>
 
 #define SCAN_DEPTH 8         /* PLAN "Storage scan" */
-#define BUMP_EVERY 25        /* new books between list refreshes during a scan */
+#define BUMP_EVERY 100       /* new books between list refreshes during a scan */
 #define STACK_BYTES (256 * 1024)
 
 static pthread_t g_thread;
@@ -111,14 +113,14 @@ static int on_item(void *user, const scan_item_t *it)
 static void *scan_main(void *arg)
 {
 	(void)arg;
+	affinity_use_all_cores();
 	int complete = db_scan_begin() >= 0;
-	for (int i = 0; complete && SCAN_VITA_DEVICES[i]; i++) {
-		const char *dev = SCAN_VITA_DEVICES[i];
-		if (!scan_vita_device_present(dev)) continue;
+	if (complete) {
 		int dirs = 0;
-		int r = scan_tree(scan_vita_fs(), dev, SCAN_DEPTH, on_item, NULL, &g_cancel, &dirs);
-		log_printf("library: %s r=%d dirs=%d found=%d", dev, r, dirs, g_found);
-		/* A device that vanished mid-walk (SCAN_ERR_ROOT) must not mark its books missing. */
+		int r = scan_tree(scan_vita_fs(), PATH_BOOKS_DIR, SCAN_DEPTH,
+		                  on_item, NULL, &g_cancel, &dirs);
+		log_printf("library: %s r=%d dirs=%d found=%d", PATH_BOOKS_DIR, r, dirs, g_found);
+		/* A failed or cancelled scan must not mark existing books missing. */
 		if (r != SCAN_OK) complete = 0;
 	}
 	/* Only a complete walk may mark unseen books missing. */

@@ -12,6 +12,7 @@ SIZE    := $(PREFIX)-size
 
 TITLE     := Noctopage
 TITLE_ID  := NOCT00001
+APP_VER   := 00.04
 TARGET    := noctopage
 VPK_NAME  := Noctopage.vpk
 BUILD     ?= build
@@ -26,6 +27,7 @@ DEPS := $(OBJS:.o=.d)
 
 CFLAGS := -std=gnu11 -Wall -Wextra -Werror -O2 -Isrc -MMD -MP
 CFLAGS += -I$(VITASDK)/arm-vita-eabi/include
+CFLAGS += -DNOCT_VERSION=\"$(APP_VER)\"
 
 # ---- TLS: vendored curl + mbedTLS, exactly as vita-radio does ------------------
 TLS_DIR  := third_party/tls-mbedtls
@@ -116,7 +118,7 @@ LIBS := $(TLS_LIBS) \
 	-lSceAppUtil_stub -lSceIme_stub -lSceNet_stub -lSceNetCtl_stub \
 	-lScePower_stub -lSceAppMgr_stub -lSceRtc_stub -lSceIofilemgr_stub \
 	-lSceLibKernel_stub -lSceKernelThreadMgr_stub -lSceProcessmgr_stub \
-	-lSceSysmem_stub -lSceKernelModulemgr_stub \
+	-lSceSysmem_stub -lSceKernelModulemgr_stub -lScePromoterUtil_stub \
 	-lpthread -lm -lc -lgcc
 
 VPK_FILES := \
@@ -124,7 +126,10 @@ VPK_FILES := \
 	sce_sys/livearea/contents/bg.png \
 	sce_sys/livearea/contents/startup.png \
 	sce_sys/livearea/contents/template.xml \
-	assets/cacert.pem
+	assets/cacert.pem \
+ sce_sys/package/head.bin \
+ docs/updater-attribution.txt \
+ docs/GPL-3.0-VitaShell.txt
 
 .PHONY: all clean sizes
 all: $(BUILD)/$(VPK_NAME)
@@ -140,7 +145,7 @@ $(BUILD)/eboot.bin: $(BUILD)/$(TARGET).velf
 # Makefile is a prerequisite so a TITLE/TITLE_ID edit regenerates the SFO.
 # ATTRIBUTE2=12 = extended memory mode.
 $(BUILD)/param.sfo: Makefile | $(BUILD)
-	$(VITASDK)/bin/vita-mksfoex -s TITLE_ID=$(TITLE_ID) -d ATTRIBUTE2=12 "$(TITLE)" $@
+	$(VITASDK)/bin/vita-mksfoex -s TITLE_ID=$(TITLE_ID) -s APP_VER=$(APP_VER) -d ATTRIBUTE2=12 "$(TITLE)" $@
 
 $(BUILD)/$(TARGET).velf: $(BUILD)/$(TARGET).elf
 	$(VITASDK)/bin/vita-elf-create $< $@

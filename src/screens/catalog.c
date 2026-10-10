@@ -21,7 +21,9 @@ catalog_t C;
 static const struct {
 	const char *name, *url;
 } BUILTIN[] = {
-	{"Project Gutenberg", "https://www.gutenberg.org/ebooks.opds/"},
+	{"Internet Archive â€” Public-domain comics", "https://archive.org/advancedsearch.php?q=mediatype%3Atexts%20AND%20subject%3Acomics%20AND%20%28licenseurl%3A%22http%3A%2F%2Fcreativecommons.org%2Fpublicdomain%2Fmark%2F1.0%2F%22%29%20AND%20NOT%20access-restricted-item%3Atrue&output=json&rows=24&page=1"},
+ {"Wikimedia Commons â€” Free comics", "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype%3Apdf%20comic&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=180&format=json"},
+ {"Project Gutenberg", "https://www.gutenberg.org/ebooks.opds/"},
 	{"Open Library (Internet Archive)", "https://openlibrary.org/opds/"},
 };
 #define NBUILTIN ((int)(sizeof BUILTIN / sizeof BUILTIN[0]))
@@ -37,6 +39,11 @@ const http_auth_t *cat_auth(void)
 	a.user = C.src[C.source].user;
 	a.pass = C.src[C.source].pass;
 	return a.user[0] ? &a : NULL;
+}
+
+const http_auth_t *cat_auth_url(const char *url)
+{
+ return C.source>=0 && C.source<C.nsrc && catalog_same_origin(C.src[C.source].url,url)?cat_auth():NULL;
 }
 
 void cat_toast(const char *msg)
@@ -69,6 +76,7 @@ static void load_sources(void)
 		s->server_id = sv[i].id;
 	}
 	if (C.src_sel > C.nsrc) C.src_sel = C.nsrc;
+ if(C.src_top>C.src_sel) C.src_top=C.src_sel;
 }
 
 int cat_builtin_count(void) { return NBUILTIN; }
@@ -84,12 +92,19 @@ static void enter(void)
 	if (C.depth == 0) load_sources();
 }
 
-static void leave(void) { g_menu_for = -1; }
+static void leave(void) {
+ if(menu_is_open()) { input_t back={.pressed=IN_BACK}; menu_update(&back); }
+ g_menu_for=-1; cat_covers_clear();
+ if(C.search_fetch>0) fetch_forget(C.search_fetch);
+ C.search_fetch=0;
+}
 
 static void open_source(int i)
 {
 	C.source = i;
-	cat_push(C.src[i].url, C.src[i].name);
+	char url[HTTP_URL_MAX];
+ if(catalog_api_url(C.src[i].url,url,sizeof url)<0) { cat_toast("Invalid catalogue address"); C.source=-1; return; }
+ cat_push(url, C.src[i].name);
 	log_printf("catalog: open %s", C.src[i].url);
 }
 
@@ -116,7 +131,9 @@ static void update_sources(const input_t *in)
 	if (in->pressed & IN_UP) C.src_sel = (C.src_sel + rows - 1) % rows;
 	if (C.src_sel < C.src_top) C.src_top = C.src_sel;
 	if (C.src_sel >= C.src_top + CAT_ROWS) C.src_top = C.src_sel - CAT_ROWS + 1;
-	if (in->pressed & IN_CONFIRM) {
+	int tap=in->touch_began && in->began_x>=CAT_X0 && in->began_y>=CAT_HEAD_H && in->began_y<CAT_HEAD_H+CAT_ROWS*CAT_ROW_H;
+ if(tap) { int r=C.src_top+(in->began_y-CAT_HEAD_H)/CAT_ROW_H; if(r<rows) C.src_sel=r; else tap=0; }
+ if ((in->pressed & IN_CONFIRM)||tap) {
 		if (C.src_sel == C.nsrc) {
 			cat_server_add();
 			load_sources();
@@ -137,7 +154,7 @@ static void update_feed(const input_t *in)
 		if (C.depth == 0) load_sources();
 		return;
 	}
-	if (in->pressed & IN_SQUARE) {
+	if ((in->pressed & IN_SQUARE) || (in->touch_began && in->began_x>690 && in->began_y<54)) {
 		cat_search_start();
 		return;
 	}
@@ -145,15 +162,9 @@ static void update_feed(const input_t *in)
 		cat_reload();
 		return;
 	}
-	int rows = cat_rows(l);
-	if (rows == 0) return;
-	if (in->pressed & IN_DOWN) l->sel = l->sel + 1 < rows ? l->sel + 1 : l->sel;
-	if (in->pressed & IN_UP) l->sel = l->sel > 0 ? l->sel - 1 : 0;
-	if (in->pressed & IN_RIGHT) l->sel = l->sel + CAT_ROWS < rows ? l->sel + CAT_ROWS : rows - 1;
-	if (in->pressed & IN_LEFT) l->sel = l->sel > CAT_ROWS ? l->sel - CAT_ROWS : 0;
-	if (l->sel < l->top) l->top = l->sel;
-	if (l->sel >= l->top + CAT_ROWS) l->top = l->sel - CAT_ROWS + 1;
-	if (!(in->pressed & IN_CONFIRM)) return;
+ grid_set_count(&l->grid,cat_rows(l));
+ if(grid_update(&l->grid,in)!=GRID_OPEN) return;
+ l->sel=l->grid.sel;
 	int e = -1;
 	cat_row_kind_t k = cat_row(l, l->sel, &e);
 	if (k == ROW_PREV) {
@@ -214,8 +225,8 @@ static int hints(hint_t *out, int max)
 		{GLYPH_LR, "Section"}, {GLYPH_DPAD, "Choose"},    {GLYPH_CONFIRM, "Open"},
 		{GLYPH_BACK, "Back"},  {GLYPH_TRIANGLE, "Reload"}, {GLYPH_SQUARE, "Search"},
 	};
-	int n = l->feed && l->feed->search_href ? 6 : 5;
+	int n = l->feed ? 6 : 5;
 	return screen_copy_hints(h, n, out, max);
 }
 
-const screen_t screen_catalog = {"Catalog", enter, leave, update, draw, hints};
+const screen_t screen_catalog = {"Browse", enter, leave, update, draw, hints};

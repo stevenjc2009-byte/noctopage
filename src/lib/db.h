@@ -1,4 +1,4 @@
-/* db — the library database (SQLite). One shared connection for the whole process, opened in
+/* db â€” the library database (SQLite). One shared connection for the whole process, opened in
  * serialized mode with the no-locking VFS ("unix-none": one process owns the file, newlib has no
  * fcntl locks). Every function takes one module mutex, so any thread may call any function
  * concurrently; multi-statement operations (upsert, scan end) run inside a SAVEPOINT.
@@ -30,7 +30,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-enum { DB_KIND_ARCHIVE = 1, DB_KIND_FOLDER = 2, DB_KIND_REFLOW = 3, DB_KIND_FIXED = 4 };
+enum { DB_KIND_ARCHIVE = 1, DB_KIND_FOLDER = 2, DB_KIND_REFLOW = 3, DB_KIND_FIXED = 4,
+       DB_KIND_STREAM = 5 }; /* OPDS-PSE pages over HTTP, never stored in the library */
 enum { DB_SORT_TITLE = 0, DB_SORT_LAST_READ = 1, DB_SORT_ADDED = 2 };
 enum { DB_DL_QUEUED = 0, DB_DL_ACTIVE = 1, DB_DL_DONE = 2, DB_DL_FAILED = 3, DB_DL_CANCELLED = 4 };
 
@@ -50,6 +51,11 @@ typedef struct {
 	double progress;    /* 0..1 */
 	int finished;
 	int missing;
+	int favorite;
+	int private_book; /* hidden from public shelf, history and continue */
+	char series[256]; /* optional user-assigned series; empty = detect from path */
+	uint64_t reading_ms;
+	int64_t pages_read;
 } db_book_t;
 
 typedef struct {
@@ -72,7 +78,7 @@ typedef struct {
 
 typedef struct {
 	int64_t id;
-	char url[512];
+	char url[2048];
 	char dest_path[512];
 	char title[256];
 	int state; /* DB_DL_* */
@@ -99,7 +105,27 @@ int db_scan_lookup(const char *path, uint64_t size, int64_t mtime);
 int db_book_upsert(const db_book_t *b); /* returns 1 new row, 0 existing row updated */
 int db_scan_end(void);
 
+typedef struct {
+	uint64_t milliseconds;
+	int64_t pages;
+	int finished, reading, total;
+} db_reading_stats_t;
+int db_set_favorite(uint64_t id, int favorite);
+int db_set_private(uint64_t id, int private_book);
+int db_set_series(uint64_t id, const char *series);
+int db_books_count_section(int private_section);
+int db_books_list_section(int sort, int private_section, db_book_t *out, int max);
+int db_continue_reading_section(int private_section, db_book_t *out);
+int db_continue_series_section(const char *series, int private_section, db_book_t *out);
+int db_mark_unread(uint64_t id);
+int db_reading_add(uint64_t id, uint64_t milliseconds, int pages);
+int db_reading_stats(db_reading_stats_t *out);
+/* Natural filename order within the same series folder; root books have no series. */
+int db_continue_series(const char *series, db_book_t *out);
+int db_next_volume(uint64_t id, db_book_t *out);
+
 /* Queries. */
+int db_books_count(void); /* visible library rows, or -1 */
 int db_books_list(int sort, db_book_t *out, int max); /* excludes missing */
 int db_book_get(uint64_t id, db_book_t *out);
 int db_continue_reading(db_book_t *out);
@@ -115,6 +141,10 @@ int db_set_title(uint64_t id, const char *title, const char *author);
 /* Per-book settings: get returns 1 (value copied, truncated to cap) or 0 (not set). */
 int db_book_setting_get(uint64_t id, const char *key, char *out, size_t cap);
 int db_book_setting_set(uint64_t id, const char *key, const char *value);
+
+/* Delete a book row with its settings and bookmarks (the file itself is removed by
+ * the caller first). Returns < 0 on DB failure. */
+int db_book_remove(uint64_t id);
 
 /* Bookmarks (list: by page, then creation order). created = 0 in b means "now". */
 int db_bookmark_add(const db_bookmark_t *b, int64_t *out_id);
@@ -133,4 +163,24 @@ int db_download_update(int64_t id, int state, int64_t bytes, int64_t total, cons
 int db_download_list(db_download_t *out, int max);
 int db_download_remove(int64_t id);
 
+/* Portable backup metadata: excludes servers and download credentials. */
+int db_library_snapshot(const char *path);
+int db_library_restore(const char *path);
+
+typedef struct { int64_t id; char name[128]; } db_collection_t;
+int db_series_volume_numbers(const char *series,unsigned char *owned,int cap);
+int db_bulk_private(const uint64_t *ids,int n,int target);
+int db_undo_move(void);
+int db_reading_snapshot(const char *path);
+int db_reading_restore(const char *path);
+int db_series_setting_get(const char *series,const char *key,char *out,size_t cap);
+int db_series_setting_set(const char *series,const char *key,const char *value);
+int db_effective_setting(uint64_t id,const char *key,char *out,size_t cap);
+int db_apply_series_settings(uint64_t id);
+int db_collections_page(int offset,db_collection_t *out,int max);
+int db_collections(db_collection_t *out,int max);
+int db_collection_create(const char *name,int64_t *id);
+int db_collection_add(int64_t collection,uint64_t book);
+int db_collection_contains(int64_t collection,uint64_t book);
+int db_collection_remove(int64_t collection,uint64_t book);
 #endif

@@ -78,11 +78,52 @@ static void fit(int sw, int sh, int mw, int mh, int *dw, int *dh)
         *dh = 1;
 }
 
+/* One box-average halving in place of ownership: returns the new buffer (the old one
+ * freed), or the original buf when it cannot halve or is out of memory. Edge blocks
+ * average the 1-4 pixels they actually cover, so no pixel is dropped or shifted. */
+static uint8_t *halve(uint8_t *buf, int *w, int *h)
+{
+    int nw = (*w + 1) / 2, nh = (*h + 1) / 2;
+    uint8_t *o;
+    int x, y, c;
+
+    if (nw < 1 || nh < 1 || (nw == *w && nh == *h))
+        return buf;
+    o = malloc((size_t)nw * (size_t)nh * 4);
+    if (!o)
+        return buf;
+    for (y = 0; y < nh; y++)
+        for (x = 0; x < nw; x++)
+            for (c = 0; c < 4; c++) {
+                int x0 = x * 2, y0 = y * 2;
+                int x1 = x0 + 1 < *w ? x0 + 1 : x0, y1 = y0 + 1 < *h ? y0 + 1 : y0;
+                const uint8_t *a = buf + ((size_t)y0 * (size_t)*w + (size_t)x0) * 4;
+                const uint8_t *b = buf + ((size_t)y0 * (size_t)*w + (size_t)x1) * 4;
+                const uint8_t *d = buf + ((size_t)y1 * (size_t)*w + (size_t)x0) * 4;
+                const uint8_t *e = buf + ((size_t)y1 * (size_t)*w + (size_t)x1) * 4;
+                /* Four samples always (clamped at the edge), so divide by 4. */
+                unsigned v = (unsigned)a[c] + b[c] + d[c] + e[c];
+                o[((size_t)y * (size_t)nw + (size_t)x) * 4 + c] = (uint8_t)((v + 2) / 4);
+            }
+    free(buf);
+    *w = nw;
+    *h = nh;
+    return o;
+}
+
 /* Take ownership of buf (bw x bh); store it in out at exactly dw x dh, box-scaling if needed. */
 static int finish(img_t *out, uint8_t *buf, int bw, int bh, int dw, int dh, int sw, int sh,
                   char *err, size_t cap)
 {
     if (bw != dw || bh != dh) {
+        /* A full-res PNG decodes far above the target: halve first so the quality
+         * scaler below works on at most ~4x the pixels instead of 16x+. */
+        while (bw >= dw * 4 && bh >= dh * 4) {
+            uint8_t *hbuf = halve(buf, &bw, &bh);
+            if (hbuf == buf)
+                break;
+            buf = hbuf;
+        }
         uint8_t *s = malloc((size_t)dw * (size_t)dh * 4);
 
         if (!s || img_scale(buf, bw, bh, s, dw, dh) != 0) {

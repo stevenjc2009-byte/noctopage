@@ -302,6 +302,19 @@ static void test_queue(void)
 	CHECK_INT(dlq_cancel(b), -1); /* done */
 	CHECK_INT(dlq_remove(y), 0);
 	CHECK(!db_row(y, &row));
+ /* Provider filenames can percent-encode into long URLs: preserve the whole URL
+  * through queue persistence and the worker, then actually download it. */
+ char long_url[1200];
+ int prefix=snprintf(long_url,sizeof long_url,"%s?padding=",U("/f/minimal.txt"));
+ memset(long_url+prefix,'a',1000-(size_t)prefix); long_url[1000]=0;
+ int64_t long_id;
+ CHECK_INT(dlq_add(long_url,NULL,"Long URL","txt",&long_id),0);
+ CHECK_INT(pump_idle(),1);
+ CHECK(item(long_id,&it) && it.state==DB_DL_DONE);
+ CHECK(db_row(long_id,&row)); CHECK_STR(row.url,long_url);
+ CHECK(file_is(book("Long URL.txt"),txt,tlen));
+ char oversized[HTTP_URL_MAX+1]; memset(oversized,'a',sizeof oversized-1); oversized[sizeof oversized-1]=0;
+ CHECK_INT(dlq_add(oversized,NULL,"Too long","txt",&long_id),-1);
 	free(epub);
 	free(txt);
 }

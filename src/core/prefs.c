@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/paths.h"
 #include "core/settings.h"
+#include "core/strutil.h"
 
 static settings_t *g_s;
 
@@ -41,4 +42,12 @@ const char *prefs_get(const char *section, const char *key, const char *def)
 void prefs_set(const char *section, const char *key, const char *value)
 {
 	if (settings_set(store(), section, key, value) == 0) save();
+}
+
+int prefs_set_checked(const char *section,const char *key,const char *value)
+{
+ const char *prior=prefs_get(section,key,""); char old[128]; str_copy(old,sizeof old,prior);
+ if(settings_set(store(),section,key,value)<0) return -1;
+ if(settings_save(store(),PATH_SETTINGS)==0) return 0;
+ settings_set(store(),section,key,old); return -1;
 }

@@ -1,8 +1,10 @@
 #include "comic/archive.h"
+#include "comic/archive_priv.h"
 
 #include <archive.h>
 #include <archive_entry.h>
 #include <locale.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,17 +12,7 @@
 #define BLOCK_SIZE (256 * 1024)
 #define ERRCAP 160
 
-struct archive_t {
-    char *path;
-    struct archive *rd; /* positioned reader, or NULL */
-    int cur;            /* index of the entry whose header rd last returned, -1 = none */
-    int consumed;       /* 1 once cur's data was read or skipped */
-    int count, cap;
-    char **names;
-    uint64_t *sizes;
-    locale_t loc;       /* UTF-8 LC_CTYPE, made current (this thread only) around libarchive calls */
-    char err[ERRCAP];
-};
+
 
 /* libarchive converts entry names to the *current locale's* charset, and in the default "C"
  * locale (also newlib's on the Vita) it drops every non-ASCII name ("cannot be converted").
@@ -85,22 +77,42 @@ static const char *entry_name(struct archive_entry *e)
     return n ? n : archive_entry_pathname(e);
 }
 
-static int list_push(archive_t *a, const char *name, uint64_t size)
+int list_push(archive_t *a, const char *name, uint64_t size)
 {
     char *dup;
 
     if (a->count == a->cap) {
         int ncap = a->cap ? a->cap * 2 : 64;
         char **nn = realloc(a->names, (size_t)ncap * sizeof *nn);
-        uint64_t *ns;
+        uint64_t *ns, *no, *nc;
+        uint16_t *nm;
+        char *nd;
 
         if (!nn)
             return -1;
-        a->names = nn;
         ns = realloc(a->sizes, (size_t)ncap * sizeof *ns);
         if (!ns)
             return -1;
+        no = realloc(a->loff, (size_t)ncap * sizeof *no);
+        if (!no)
+            return -1;
+        nm = realloc(a->meth, (size_t)ncap * sizeof *nm);
+        if (!nm)
+            return -1;
+        nc = realloc(a->csz, (size_t)ncap * sizeof *nc);
+        if (!nc)
+            return -1;
+        nd = realloc(a->direct, (size_t)ncap * sizeof *nd);
+        if (!nd)
+            return -1;
+        /* Publish everything only once all grew: a half-grown listing used to
+         * survive the failure path. */
+        a->names = nn;
         a->sizes = ns;
+        a->loff = no;
+        a->meth = nm;
+        a->csz = nc;
+        a->direct = nd;
         a->cap = ncap;
     }
     dup = strdup(name ? name : "");
@@ -108,6 +120,10 @@ static int list_push(archive_t *a, const char *name, uint64_t size)
         return -1;
     a->names[a->count] = dup;
     a->sizes[a->count] = size;
+    a->loff[a->count] = 0;
+    a->meth[a->count] = 0;
+    a->csz[a->count] = 0;
+    a->direct[a->count] = 0;
     a->count++;
     return 0;
 }
@@ -150,6 +166,7 @@ static int list_archive(archive_t *a, char *err, size_t errcap)
     return 0;
 }
 
+
 archive_t *arc_open(const char *path, char *err, size_t errcap)
 {
     archive_t *a;
@@ -173,7 +190,7 @@ archive_t *arc_open(const char *path, char *err, size_t errcap)
     a->cur = -1;
     a->loc = newlocale(LC_CTYPE_MASK, "C.UTF-8", (locale_t)0);
     old = loc_enter(a);
-    rc = list_archive(a, err, errcap);
+    rc = zip_list(a) ? 0 : list_archive(a, err, errcap);
     loc_leave(a, old);
     if (rc != 0) {
         arc_close(a);
@@ -194,6 +211,10 @@ void arc_close(archive_t *a)
         free(a->names[i]);
     free(a->names);
     free(a->sizes);
+    free(a->loff);
+    free(a->meth);
+    free(a->csz);
+    free(a->direct);
     free(a->path);
     if (a->loc)
         freelocale(a->loc);
@@ -262,7 +283,10 @@ static int seek_to(archive_t *a, int i)
  * the recorded size so that an entry of exactly that size is seen to end instead of looking full. */
 static int read_data(archive_t *a, uint64_t hint, uint8_t **out, size_t *len)
 {
-    size_t cap = hint ? (size_t)hint + 1 : 4096, got = 0;
+    /* Clamp the 64-bit header size first: on 32-bit size_t a lying entry used to
+     * truncate into a tiny initial buffer (or wrap the doubling below). */
+    uint64_t h = hint > ARC_MAX_ENTRY ? ARC_MAX_ENTRY : hint;
+    size_t cap = h ? (size_t)h + 1 : 4096, got = 0;
     uint8_t *buf = malloc(cap + 1);
 
     if (!buf)
@@ -278,7 +302,8 @@ static int read_data(archive_t *a, uint64_t hint, uint8_t **out, size_t *len)
                 snprintf(a->err, sizeof a->err, "entry too large");
                 return ARC_E_TOOBIG;
             }
-            cap = cap * 2 > (size_t)ARC_MAX_ENTRY + 1 ? (size_t)ARC_MAX_ENTRY + 1 : cap * 2;
+            /* Halve-checked doubling: cap * 2 must not wrap 32-bit size_t first. */
+            cap = cap > (size_t)ARC_MAX_ENTRY / 2 ? (size_t)ARC_MAX_ENTRY + 1 : cap * 2;
             nb = realloc(buf, cap + 1);
             if (!nb) {
                 free(buf);
@@ -315,6 +340,18 @@ static int read_entry(archive_t *a, int i, uint8_t **out, size_t *len)
         snprintf(a->err, sizeof a->err, "entry too large (%llu bytes)",
                  (unsigned long long)a->sizes[i]);
         return ARC_E_TOOBIG;
+    }
+    /* The open libarchive reader streams forward for free (and survives the file
+     * being unlinked mid-read); only jump directly when it would have to reopen
+     * and re-scan from the start. */
+    int streaming = (a->rd && i >= a->cur && (i != a->cur || !a->consumed)) ||
+                    (!a->rd && i == a->cur + 1);
+    if (a->direct[i] && !streaming) {
+        rc = zipfast_read(a, i, out, len);
+        if (rc == ARC_OK || rc == ARC_E_NOMEM)
+            return rc;
+        /* A direct miss (odd corner the walker tolerates): fall through. */
+        a->err[0] = '\0';
     }
     rc = seek_to(a, i);
     if (rc == ARC_OK) {

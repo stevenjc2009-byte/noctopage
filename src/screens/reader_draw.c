@@ -151,9 +151,9 @@ void reader_draw_overlay(void)
 	else
 		snprintf(buf, sizeof buf, "%d / %d", p[0] + 1, R.count);
 	int cw = font_width(FONT_PX_TITLE, buf);
-	font_draw(SCREEN_W - 24 - cw, 14, THEME_FONT, FONT_PX_TITLE, buf);
+	font_draw(SCREEN_W - 78 - cw, 14, THEME_FONT, FONT_PX_TITLE, buf);
 	/* Title, cut with an ellipsis so it never runs into the counter. */
-	int room = SCREEN_W - 24 - cw - 24 - 24;
+	int room = SCREEN_W - 78 - cw - 24 - 24;
 	char title[sizeof R.book.title + 4];
 	snprintf(title, sizeof title, "%s", R.book.title);
 	for (int n = (int)strlen(title); n > 0 && font_width(FONT_PX_TITLE, title) > room; n--) {
@@ -161,6 +161,9 @@ void reader_draw_overlay(void)
 		snprintf(title + n, sizeof title - (size_t)n, "\xE2\x80\xA6");
 	}
 	font_draw(24, 14, THEME_FONT, FONT_PX_TITLE, title);
+	draw_rrect(902, 8, 48, 48, 6, THEME_PANEL);
+	for (int d = -1; d <= 1; d++)
+		vita2d_draw_fill_circle(926.0f, (float)(32 + d * 8), 2.5f, THEME_FONT);
 	if (R.mode == RM_VERTICAL)
 		snprintf(buf, sizeof buf, "%s  \xC2\xB7  Dim %d%%", reader_mode_name(), R.dim * 25);
 	else

@@ -28,6 +28,7 @@ typedef struct {
  * Vita); NULL uses curl's default (host tests). On the Vita it first brings the network
  * modules up. Returns 0, or -1 (network unavailable: every later call fails cleanly). */
 int http_global_init(const char *ca_file);
+/* Stop/join HTTP workers before cleanup; each worker owns its connection cache. */
 void http_global_cleanup(void);
 
 /* GET url into memory, following redirects (max 10), 20 s connect / 60 s stall timeouts.
@@ -36,7 +37,7 @@ void http_global_cleanup(void);
  * reason in err ("HTTP 404", "Could not resolve host", "Too large", "Cancelled") and *out
  * zeroed except status. */
 int http_get(const char *url, const http_auth_t *auth, size_t max_bytes, const volatile int *cancel,
-             http_doc_t *out, char *err, size_t errcap);
+			 http_doc_t *out, char *err, size_t errcap);
 void http_doc_free(http_doc_t *d);
 
 /* Progress callback: bytes written so far (resume offset included) and the total (-1 when
@@ -50,7 +51,7 @@ typedef int (*http_progress_fn)(void *ud, int64_t now, int64_t total);
  * with characters FAT/exFAT refuse replaced by '_'. Returns 0 on success, else -1 with err
  * as for http_get ("Cancelled" when the callback stopped it). */
 int http_download(const char *url, const http_auth_t *auth, const char *part_path,
-                  int64_t resume_from, http_progress_fn progress, void *ud, char *filename,
-                  size_t filename_cap, char *err, size_t errcap);
+				  int64_t resume_from, http_progress_fn progress, void *ud, char *filename,
+				  size_t filename_cap, char *err, size_t errcap);
 
 #endif

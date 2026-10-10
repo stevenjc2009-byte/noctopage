@@ -7,12 +7,12 @@
 #include <vita2d.h>
 
 static const char *const LABELS[SEC_COUNT] = {
-	"My Books", "Catalog", "History", "Downloads", "Settings"
+	"Your shelf", "Private", "Discover", "Recent", "Transfers", "Settings"
 };
 
-/* Row centres, from NOBORU's layout: three sections up top, two pinned low. */
-static const int ROW_CY[SEC_COUNT] = {120, 170, 220, 426, 476};
-#define ROW_H 50
+/* Reading sections above, utilities below. Touch uses the same geometry. */
+static const int ROW_CY[SEC_COUNT] = {126, 182, 238, 294, 380, 438};
+#define ROW_H 44
 
 static float g_anim[SEC_COUNT];
 
@@ -47,6 +47,11 @@ static void icon(section_t s, int x, int y, unsigned int c, unsigned int bg)
 		draw_rect(x + 11, y + 3, 8, 14, c);
 		draw_rect(x + 9, y + 5, 2, 12, bg);
 		break;
+	case SEC_PRIVATE: /* lock */
+		ring(cx, cy - 4, 7.0f, c, bg);
+		draw_rrect(x + 1, y + 8, 18, 12, 3, c);
+		draw_rect(x + 9, y + 12, 2, 4, bg);
+		break;
 	case SEC_CATALOG: /* globe */
 		ring(cx, cy, 10.0f, c, bg);
 		draw_rect(x + 9, y + 1, 2, 18, c);
@@ -75,17 +80,6 @@ static void icon(section_t s, int x, int y, unsigned int c, unsigned int bg)
 	}
 }
 
-static unsigned int tint(section_t s, int alpha)
-{
-	switch (s) {
-	case SEC_MYBOOKS:   return RGBA8(255, 255, 0, alpha);
-	case SEC_CATALOG:   return RGBA8(0, 148, 255, alpha);
-	case SEC_HISTORY:   return RGBA8(0, 188, 18, alpha);
-	case SEC_DOWNLOADS: return RGBA8(65, 105, 226, alpha);
-	default:            return RGBA8(255, 255, 255, alpha);
-	}
-}
-
 static void draw_moon(int cx, int cy)
 {
 	/* Thin crescent: white disc with a black disc biting out of it. */
@@ -95,10 +89,16 @@ static void draw_moon(int cx, int cy)
 
 void sidebar_draw(section_t current, uint64_t now_ms)
 {
+	(void)now_ms;
 	draw_rect(0, 0, THEME_SIDEBAR_W, 544, THEME_BLACK);
+	draw_rect(THEME_SIDEBAR_W - 1, 0, 1, 521, THEME_PANEL);
 
 	draw_moon(30, 40);
-	font_draw(52, 28, THEME_FONT, FONT_PX_TITLE, "Noctopage");
+	font_draw(52, 28, THEME_FONT, FONT_PX_TITLE, "NoctoPage");
+	font_draw(20, 66, THEME_SUBFONT, 12, "A LITTLE NIGHT READING");
+	draw_rect(20, 96, 160, 1, THEME_PANEL);
+	draw_rect(20, 332, 160, 1, THEME_PANEL);
+	font_draw(20, 490, THEME_SUBFONT, 11, "READ AT YOUR PACE");
 
 	for (int i = 0; i < SEC_COUNT; i++) {
 		int sel = (i == (int)current);
@@ -110,12 +110,12 @@ void sidebar_draw(section_t current, uint64_t now_ms)
 		unsigned int bg = THEME_BLACK;
 		if (sel) {
 			bg = THEME_SELECTED;
-			draw_rect(0, top, THEME_SIDEBAR_W, ROW_H, bg);
-			draw_selector(2, top + 2, THEME_SIDEBAR_W - 4, ROW_H - 4, now_ms);
+			draw_rrect(10, top, THEME_SIDEBAR_W - 24, ROW_H, 7, bg);
+			draw_rect(10, top + 10, 3, ROW_H - 20, THEME_SELECTOR);
 		}
 		int dx = (int)(g_anim[i] * 5.0f);
-		icon((section_t)i, 14 + dx, ROW_CY[i] - 10, tint((section_t)i, sel ? 255 : 128), bg);
-		font_draw(52 + dx, ROW_CY[i] - font_height(FONT_PX_LABEL) / 2, sel ? THEME_FONT : RGBA8(255, 255, 255, 128),
+		icon((section_t)i, 14 + dx, ROW_CY[i] - 10, sel ? THEME_SELECTOR : THEME_SUBFONT, bg);
+		font_draw(52 + dx, ROW_CY[i] - font_height(FONT_PX_LABEL) / 2, sel ? THEME_FONT : THEME_SUBFONT,
 		          FONT_PX_LABEL, LABELS[i]);
 	}
 }

@@ -9,6 +9,9 @@
 
 /* Open b (copied). Resumes at b->page. */
 void reader_open(const db_book_t *b);
+/* Open an OPDS-PSE stream: title shown, position not saved (no library row). */
+void reader_open_stream(const char *title, const char *tmpl, int count, const char *user,
+                        const char *pass);
 int reader_is_open(void);
 /* One frame of input. Circle closes the reader (position saved). */
 void reader_update(const input_t *in);

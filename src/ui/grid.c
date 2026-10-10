@@ -11,11 +11,11 @@
 
 #define STEP_X      (GRID_W + GRID_GAP)
 #define STEP_Y      (GRID_H + GRID_GAP)
-#define COL0_X      211 /* NOBORU: 580 + (col - 2) * 186 + 3 */
+#define COL0_X      222
 #define DRAG_PX     10
-#define GRADIENT_H  120
+#define COVER_H     246
 #define TITLE_PAD   8
-#define BADGE_H     24
+#define BADGE_H     22
 #define BAR_X       955
 #define BAR_W       5
 
@@ -33,7 +33,7 @@ static int wrap_title(const char *title, char (**lines)[TEXT_LINE_MAX])
 	int slot = (int)(key % WRAP_SLOTS);
 	if (g_wrap[slot].key != key) {
 		g_wrap[slot].key = key;
-		g_wrap[slot].n = text_wrap(FONT_PX_LABEL, title, GRID_W - 2 * TITLE_PAD, 2, g_wrap[slot].lines);
+		g_wrap[slot].n = text_wrap(FONT_PX_LABEL, title, GRID_W - 2 * TITLE_PAD - 34, 2, g_wrap[slot].lines);
 	}
 	*lines = g_wrap[slot].lines;
 	return g_wrap[slot].n;
@@ -77,7 +77,7 @@ static int update_touch(grid_t *g, const input_t *in)
 {
 	int down = in->touch_count > 0;
 	int y = down ? in->touch[0].y : 0;
-	if (in->touch_began && in->began_x > THEME_SIDEBAR_W && in->began_y < GRID_VIEW_Y + GRID_VIEW_H) {
+	if (in->touch_began && in->began_x > THEME_SIDEBAR_W && in->began_y >= GRID_VIEW_Y && in->began_y < GRID_VIEW_Y + GRID_VIEW_H) {
 		g->touching = 1;
 		g->dragging = 0;
 		g->touch_x0 = in->began_x;
@@ -87,7 +87,8 @@ static int update_touch(grid_t *g, const input_t *in)
 	}
 	if (!g->touching) return GRID_NONE;
 	if (down) {
-		if (!g->dragging && (y - g->touch_y0 > DRAG_PX || g->touch_y0 - y > DRAG_PX)) {
+		if (!g->dragging && (y - g->touch_y0 > DRAG_PX || g->touch_y0 - y > DRAG_PX ||
+		    in->touch[0].x - g->touch_x0 > DRAG_PX || g->touch_x0 - in->touch[0].x > DRAG_PX)) {
 			g->dragging = 1;
 			g->follow = 0;
 		}
@@ -104,6 +105,10 @@ static int update_touch(grid_t *g, const input_t *in)
 	if (i < 0) return GRID_NONE;
 	g->sel = i;
 	g->follow = 1;
+	int card_x = COL0_X + (i % GRID_COLS) * STEP_X;
+	int card_y = GRID_VIEW_Y + GRID_TOP + (i / GRID_COLS) * STEP_Y - (int)g->scroll;
+	if (g->actions && g->touch_x0 >= card_x + GRID_W - 42 &&
+	    g->touch_y0 >= card_y + GRID_H - 42) return GRID_MENU;
 	return GRID_OPEN;
 }
 
@@ -133,8 +138,8 @@ int grid_update(grid_t *g, const input_t *in)
 	}
 	if (in->pressed & IN_CONFIRM) ret = GRID_OPEN;
 
-	if (g->follow && !g->touching) { /* ease the selected row to the middle (NOBORU /8) */
-		float target = (float)((g->sel / GRID_COLS) * STEP_Y + GRID_H / 2 - 232);
+	if (g->follow && !g->touching) { /* ease the selected card into the viewport */
+		float target = (float)((g->sel / GRID_COLS) * STEP_Y + GRID_TOP + (GRID_H - GRID_VIEW_H) / 2);
 		target = clampf(target, 0.0f, max_scroll(g));
 		g->scroll += (target - g->scroll) / 8.0f;
 		if (fabsf(target - g->scroll) < 0.5f) g->scroll = target;
@@ -154,14 +159,19 @@ void grid_visible(const grid_t *g, int *first, int *last)
 
 static void draw_cover(vita2d_texture *t, int x, int y)
 {
-	draw_rect(x, y, GRID_W, GRID_H, THEME_BLACK);
+	draw_rect(x, y, GRID_W, COVER_H, THEME_BLACK);
 	if (!t) {
-		draw_rect(x, y, GRID_W, GRID_H, THEME_COVER);
+		draw_rect(x, y, GRID_W, COVER_H, THEME_COVER);
+		int mx = x + GRID_W / 2, my = y + COVER_H / 2;
+		draw_rect(mx - 22, my - 28, 18, 48, THEME_PANEL);
+		draw_rect(mx + 4, my - 28, 18, 48, THEME_PANEL);
+		draw_rect(mx - 18, my - 21, 10, 2, THEME_SUBFONT);
+		draw_rect(mx + 8, my - 21, 10, 2, THEME_SUBFONT);
 		return;
 	}
 	float tw = (float)vita2d_texture_get_width(t), th = (float)vita2d_texture_get_height(t);
-	float s = fmaxf(GRID_W / tw, GRID_H / th);
-	float sw = GRID_W / s, sh = GRID_H / s;
+	float s = fmaxf(GRID_W / tw, COVER_H / th);
+	float sw = GRID_W / s, sh = COVER_H / s;
 	vita2d_draw_texture_part_scale(t, (float)x, (float)y, (tw - sw) / 2.0f, (th - sh) / 2.0f, sw, sh, s, s);
 }
 
@@ -177,32 +187,47 @@ static void draw_check(int x, int y)
 static void draw_item(const grid_item_t *it, int x, int y)
 {
 	draw_cover(it->cover, x, y);
-	draw_gradient_v(x, y + GRID_H - GRADIENT_H, GRID_W, GRADIENT_H, RGBA8(0, 0, 0, 0), RGBA8(0, 0, 0, 230));
+	draw_rect(x, y + COVER_H, GRID_W, GRID_H - COVER_H, THEME_DARKGREY);
 	if (it->title && *it->title) {
 		char (*lines)[TEXT_LINE_MAX];
 		int n = wrap_title(it->title, &lines);
 		for (int i = 0; i < n; i++) {
-			int ly = y + GRID_H - (n == 2 && i == 0 ? 47 : 27);
+			int ly = y + COVER_H + 10 + i * 19;
 			font_draw(x + TITLE_PAD, ly, THEME_FONT, FONT_PX_LABEL, lines[i]);
 		}
 	}
 	if (it->badge && *it->badge) {
 		int w = font_width(FONT_PX_LABEL, it->badge) + 11;
-		draw_rect(x, y, w, BADGE_H, THEME_BADGE);
-		font_draw(x + 5, y + (BADGE_H - font_height(FONT_PX_LABEL)) / 2 + 1, THEME_FONT, FONT_PX_LABEL, it->badge);
+		if (w > GRID_W - 16) w = GRID_W - 16;
+		draw_rrect(x + 8, y + 8, w, BADGE_H, 4, it->finished ? RGBA8(28,140,72,255) : THEME_BADGE);
+		char badge[TEXT_LINE_MAX];
+		text_ellipsize(FONT_PX_LABEL, it->badge, w - 10, badge);
+		font_draw(x + 13, y + 9 + (BADGE_H - font_height(FONT_PX_LABEL)) / 2, THEME_FONT, FONT_PX_LABEL, badge);
+	}
+	if (it->actions) {
+		int ax = x + GRID_W - 21, ay = y + GRID_H - 23;
+		draw_rrect(x + GRID_W - 38, y + GRID_H - 42, 36, 38, 4, THEME_PANEL);
+		for (int d = -1; d <= 1; d++)
+			vita2d_draw_fill_circle((float)ax, (float)(ay + d * 6), 2.0f, THEME_FONT);
 	}
 	if (it->progress >= 0.0f) {
 		float p = clampf(it->progress, 0.0f, 1.0f);
 		draw_rect(x, y + GRID_H - 4, GRID_W, 4, RGBA8(40, 40, 40, 255));
-		draw_rect(x, y + GRID_H - 4, (int)(GRID_W * p + 0.5f), 4, THEME_SELECTOR);
+		draw_rect(x, y + GRID_H - 4, (int)(GRID_W * p + 0.5f), 4, RGBA8(65,148,224,255));
 	}
-	if (it->finished)
+	if (it->selected) draw_rrect(x+GRID_W-37,y+36,29,27,4,RGBA8(65,148,224,255));
+ if (it->selected) draw_check(x+GRID_W-22,y+49);
+ if (it->finished)
 		draw_check(x + GRID_W - 16, y + 16);
 }
 
 void grid_draw(grid_t *g, grid_item_fn fn, void *user, uint64_t now_ms)
 {
 	if (g->count == 0) return;
+	int old_clip = vita2d_get_clipping_enabled(), x0, y0, x1, y1;
+	vita2d_get_clip_rectangle(&x0, &y0, &x1, &y1);
+	vita2d_set_clip_rectangle(THEME_SIDEBAR_W + 1, GRID_VIEW_Y, 960, GRID_VIEW_Y + GRID_VIEW_H);
+	vita2d_enable_clipping();
 	int first, last;
 	grid_visible(g, &first, &last);
 	for (int i = first; i <= last; i++) {
@@ -224,4 +249,7 @@ void grid_draw(grid_t *g, grid_item_fn fn, void *user, uint64_t now_ms)
 		draw_rect(BAR_X, GRID_VIEW_Y, BAR_W, GRID_VIEW_H, theme_bg());
 		draw_rect(BAR_X, ty, BAR_W, th, THEME_FONT);
 	}
+	vita2d_set_clip_rectangle(x0, y0, x1, y1);
+	if (!old_clip) vita2d_disable_clipping();
+
 }

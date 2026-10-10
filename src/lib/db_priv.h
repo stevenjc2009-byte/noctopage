@@ -9,7 +9,7 @@
 
 #define DBI(x) ((int64_t)(x))
 
-#define DB_SCHEMA_VERSION 1
+#define DB_SCHEMA_VERSION 3
 /* migrations[n] upgrades user_version n to n + 1 (defined in db_tables.c). */
 extern const char *const db_migrations[DB_SCHEMA_VERSION];
 

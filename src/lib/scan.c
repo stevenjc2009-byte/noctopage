@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 typedef struct {
 	const scan_fs_t *fs;
@@ -46,9 +47,15 @@ static int is_skipped(const char *path)
 	const char *rel = device_relative(path);
 	size_t i;
 
-	for (i = 0; i < sizeof k_skip / sizeof k_skip[0]; i++)
+	for (i = 0; i < sizeof k_skip / sizeof k_skip[0]; i++) {
+		size_t k = strlen(k_skip[i]);
 		if (str_casecmp(rel, k_skip[i]) == 0)
 			return 1;
+		/* Exact match only used to descend into "ux0:cache/subdir" etc: skip the
+		 * whole subtree, not just a directory literally named "cache". */
+		if (strlen(rel) > k && rel[k] == '/' && strncasecmp(rel, k_skip[i], k) == 0)
+			return 1;
+	}
 	return 0;
 }
 

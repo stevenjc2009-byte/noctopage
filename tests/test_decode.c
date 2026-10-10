@@ -136,11 +136,14 @@ static void test_tall(const char *name, int is_png)
     expect_size(d, n, 100, 100, 9, 100, 800, 9000);
     expect_size(d, n, 400, 0, 400, 4500, 800, 9000);
     expect_size(d, n, 1, 1, 1, 1, 800, 9000);
-    check_against_full(d, n, 0, 544, is_png ? 0.01 : 2.5, is_png ? 0.0 : 1.0);
-    check_against_full(d, n, 100, 0, is_png ? 0.01 : 2.5, is_png ? 0.0 : 1.0);
-    check_against_full(d, n, 400, 0, is_png ? 0.01 : 2.5, is_png ? 0.0 : 1.0);
-    check_against_full(d, n, 0, 3000, is_png ? 0.01 : 2.5, is_png ? 0.0 : 1.0);
-    check_against_full(d, n, 301, 0, is_png ? 0.01 : 2.5, is_png ? 0.0 : 1.0);
+    /* PNG now pre-shrinks by exact halving before the quality scaler (like the JPEG
+     * DCT downscale), so rounding-level differences vs one-shot box scale are
+     * expected: 0.5 mean, still with zero shifted edges. */
+    check_against_full(d, n, 0, 544, is_png ? 0.5 : 2.5, is_png ? 0.0 : 1.0);
+    check_against_full(d, n, 100, 0, is_png ? 0.5 : 2.5, is_png ? 0.0 : 1.0);
+    check_against_full(d, n, 400, 0, is_png ? 0.5 : 2.5, is_png ? 0.0 : 1.0);
+    check_against_full(d, n, 0, 3000, is_png ? 0.5 : 2.5, is_png ? 0.0 : 1.0);
+    check_against_full(d, n, 301, 0, is_png ? 0.5 : 2.5, is_png ? 0.0 : 1.0);
 
     /* Full-size decode is sharp: the 6 px white outline ends at x = 5. (Independent of the scaled
      * path, so a DCT scale chosen too small, which blurs this edge, cannot hide.) */

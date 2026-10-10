@@ -8,6 +8,8 @@
 #include "lib/db.h"
 #include "net/fetch.h"
 #include "net/opds.h"
+#include "net/catalog_api.h"
+#include "ui/grid.h"
 #include "ui/hintbar.h"
 #include "ui/input.h"
 
@@ -36,6 +38,9 @@ typedef struct {
 	opds_feed *feed;
 	char err[160];
 	int sel, top;
+ grid_t grid;
+ char filter[256];
+ int order[OPDS_MAX_ENTRIES], norder;
 } cat_level_t;
 
 typedef enum { ROW_ENTRY, ROW_PREV, ROW_NEXT } cat_row_kind_t;
@@ -57,6 +62,7 @@ extern catalog_t C;
 
 /* catalog.c */
 const http_auth_t *cat_auth(void);
+const http_auth_t *cat_auth_url(const char *url);
 int cat_builtin_count(void);
 void cat_toast(const char *msg);
 
@@ -69,6 +75,7 @@ void cat_reload(void);
 void cat_close_all(void);
 void cat_poll(void);
 void cat_search_start(void);
+void cat_filter(cat_level_t *l);
 int cat_rows(const cat_level_t *l);
 /* Kind of row r, and its entry index for ROW_ENTRY. */
 cat_row_kind_t cat_row(const cat_level_t *l, int r, int *entry);

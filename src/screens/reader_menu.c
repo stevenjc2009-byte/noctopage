@@ -2,18 +2,23 @@
  * reading mode, fit, rotation, double pages, crop, contents, bookmarks. Mode, fit, double
  * pages and crop are saved for this book only (Settings holds the defaults). Contents and bookmarks open a list. */
 #include "screens/reader_priv.h"
+#include "app.h"
 
 #include "core/log.h"
+#include "core/strutil.h"
+#include "core/strutil.h"
 #include "ui/listview.h"
 #include "ui/menu.h"
+#include "ui/osk.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define BM_MAX 200
 #define TOC_MAX 256
 
-enum { M_MODE, M_FIT, M_ROTATE, M_SPREADS, M_CROP, M_CONTENTS, M_ADD_BM, M_BOOKMARKS, M_COUNT };
+enum { M_MODE, M_FIT, M_LANDSCAPE, M_ROTATE, M_SPREADS, M_CROP, M_GOTO, M_CONTENTS, M_ADD_BM, M_BOOKMARKS, M_PRIVATE, M_SERIES_SETTINGS, M_NEXT, M_COUNT };
 
 static int g_ids[M_COUNT], g_nids;
 static char g_label[M_COUNT][64];
@@ -48,13 +53,22 @@ void reader_menu_open(void)
 	add(M_MODE, "Reading mode: %s", reader_mode_name());
 	if (R.mode != RM_VERTICAL) {
 		add(M_FIT, "Fit: %s", reader_fit_name());
+		/* One tap to landscape: a 90-degree turn drawn at a uniform scale, so the
+		 * page keeps its shape and is never stretched (see rtex_draw_crop). */
+		add(M_LANDSCAPE, "Landscape: %s", (R.rot & 1) ? "On" : "Off");
 		add(M_ROTATE, "Rotate: %s", ROT[R.rot & 3]);
 		if (R.rot == 0) add(M_SPREADS, "Double pages: %s", SPREADS[R.spreads]);
 		add(M_CROP, "Crop white borders: %s", R.crop ? "On" : "Off");
 	}
+	add(M_GOTO, "%s", "Go to page");
 	if (g_ntoc > 0) add(M_CONTENTS, "%s", "Contents");
+	if (R.stream) { menu_open(R.book.title, g_ptr, g_nids); return; } /* no library row: no bookmarks, no next volume below */
 	add(M_ADD_BM, "%s", "Add bookmark");
 	add(M_BOOKMARKS, "%s", "Bookmarks");
+	add(M_PRIVATE, "%s", R.book.private_book ? "Move to Your shelf" : "Move to Private");
+	add(M_SERIES_SETTINGS,"%s","Use these settings for this series");
+	db_book_t next;
+	if (db_next_volume(R.book.id, &next) == 1) add(M_NEXT, "%s", "Next volume");
 	menu_open(R.book.title, g_ptr, g_nids);
 }
 
@@ -132,11 +146,22 @@ static void pick(int id)
 		reader_setting_save("fit", R.fit);
 		reader_goto(R.page, 1);
 		break;
+	case M_LANDSCAPE: {
+		char v[8];
+		R.rot = (R.rot & 1) ? 0 : 1; /* portrait <-> 90 degrees, saved like Rotate */
+		snprintf(v, sizeof v, "%d", R.rot);
+		if (db_book_setting_set(R.book.id, "rotate", v) < 0)
+			log_printf("reader: rotate save: %s", db_last_error());
+		R.sp_dirty = 1; /* spreads stay off while turned, like Rotate */
+		reader_goto(R.page, 1);
+		break;
+	}
 	case M_ROTATE: {
 		char v[8];
 		R.rot = (R.rot + 1) & 3;
 		snprintf(v, sizeof v, "%d", R.rot);
-		db_book_setting_set(R.book.id, "rotate", v);
+		if (db_book_setting_set(R.book.id, "rotate", v) < 0)
+			log_printf("reader: rotate save: %s", db_last_error());
 		R.sp_dirty = 1;
 		reader_goto(R.page, 1);
 		break;
@@ -153,6 +178,23 @@ static void pick(int id)
 		rtex_clear(); /* pages uploaded before were not measured */
 		reader_goto(R.page, 1);
 		break;
+	case M_GOTO: {
+		char buf[16];
+		if (osk_prompt("Go to page", "", OSK_TEXT, buf, sizeof buf) == 1 && R.count > 0) {
+			int p;
+			if (str_page_number(buf, R.count, &p)) reader_goto(p - 1, 1);
+			else app_message("Enter a valid page number");
+		}
+		return;
+	}
+	case M_PRIVATE:
+		if (db_set_private(R.book.id, !R.book.private_book) == 0) { R.book.private_book = !R.book.private_book; app_private_moved(R.book.private_book); }
+		else app_message("Could not move volume");
+		break;
+	case M_SERIES_SETTINGS:
+  reader_setting_save("mode",R.mode); reader_setting_save("fit",R.fit); reader_setting_save("spreads",R.spreads); reader_setting_save("crop",R.crop); reader_setting_save("rotate",R.rot);
+  app_message(db_apply_series_settings(R.book.id)<0 ? "Could not save series settings":"Settings applied across this series"); return;
+ case M_NEXT: app_request_next(R.book.id); return;
 	case M_CONTENTS: open_contents(); return;
 	case M_ADD_BM: add_bookmark(); return;
 	case M_BOOKMARKS: open_bookmarks(); return;
@@ -171,7 +213,8 @@ void reader_menu_update(const input_t *in)
 		} else if (a == LV_PICK && g_list == L_BM) {
 			reader_goto(g_bm[i].page, 1);
 		} else if (a == LV_DELETE && g_list == L_BM) {
-			db_bookmark_remove(g_bm[i].id);
+			if (db_bookmark_remove(g_bm[i].id) < 0)
+				log_printf("reader: bookmark delete: %s", db_last_error());
 			load_bookmarks();
 			listview_set_items(g_items, g_nbm);
 		}

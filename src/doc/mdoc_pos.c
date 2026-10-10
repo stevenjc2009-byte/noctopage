@@ -94,6 +94,52 @@ int mdoc__page_text(mdoc_t *d, int page, char *out, size_t cap)
     return rc;
 }
 
+/* ---- text search ----------------------------------------------------------------------- */
+
+#define FIND_TEXT_MAX (128u * 1024u)
+
+static void fold_str(char *s)
+{
+    for (; *s; s++)
+        if (*s >= 'A' && *s <= 'Z')
+            *s = (char)(*s + ('a' - 'A'));
+}
+
+int mdoc_find_page(mdoc_t *d, int start, const char *query)
+{
+    int n, p, found = -1;
+    char *q = NULL, *t = NULL;
+    size_t qlen;
+
+    if (!d || !query || !query[0] || start < 0)
+        return -1;
+    n = mdoc_page_count(d);
+    if (n <= 0 || start >= n)
+        return -1;
+    qlen = strlen(query) + 1;
+    q = malloc(qlen);
+    t = malloc(FIND_TEXT_MAX);
+    if (!q || !t)
+        goto out;
+    memcpy(q, query, qlen);
+    fold_str(q);
+    if (!q[0])
+        goto out;
+    for (p = start; p < n; p++) {
+        if (mdoc__page_text(d, p, t, FIND_TEXT_MAX) < 0)
+            continue;
+        fold_str(t);
+        if (strstr(t, q)) {
+            found = p;
+            break;
+        }
+    }
+out:
+    free(q);
+    free(t);
+    return found;
+}
+
 /* Visible characters on a page, cached until the next layout change. */
 static int page_chars(mdoc_t *d, int page)
 {

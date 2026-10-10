@@ -165,15 +165,18 @@ void book_draw_overlay(void)
 	int shown = (B.seeking ? B.seek_page : B.page) + 1;
 	snprintf(buf, sizeof buf, "%d / %d", shown, B.count);
 	int cw = font_width(FONT_PX_TITLE, buf);
-	font_draw(960 - 24 - cw, 14, THEME_FONT, FONT_PX_TITLE, buf);
+	font_draw(960 - 78 - cw, 14, THEME_FONT, FONT_PX_TITLE, buf);
 	char title[sizeof B.book.title + 4];
 	snprintf(title, sizeof title, "%s", B.book.title);
-	int room = 960 - 24 - cw - 48;
+	int room = 960 - 78 - cw - 48;
 	for (int n = (int)strlen(title); n > 0 && font_width(FONT_PX_TITLE, title) > room; n--) {
 		while (n > 0 && ((unsigned char)title[n] & 0xC0) == 0x80) n--; /* whole UTF-8 chars */
 		snprintf(title + n, sizeof title - (size_t)n, "\xE2\x80\xA6");
 	}
 	font_draw(24, 14, THEME_FONT, FONT_PX_TITLE, title);
+	draw_rrect(902, 8, 48, 48, 6, THEME_PANEL);
+	for (int d = -1; d <= 1; d++)
+		vita2d_draw_fill_circle(926.0f, (float)(32 + d * 8), 2.5f, THEME_FONT);
 	snprintf(buf, sizeof buf, "%d px  \xC2\xB7  Margins %d  \xC2\xB7  Spacing %.1f  \xC2\xB7  %s  \xC2\xB7  Dim %d%%",
 	         B.style.font_px, B.style.margin_px, (double)B.style.line_spacing, book_theme_name(),
 	         B.dim * 25);

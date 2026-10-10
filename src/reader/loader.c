@@ -6,6 +6,9 @@
  * (pc_contains while picking); free callbacks only free(). */
 #include "reader/loader_priv.h"
 
+#include "core/affinity.h"
+#include "lib/db.h"
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +28,11 @@ struct loader {
 	size_t budget; /* pixel bytes one page may use: the cache cap less bookkeeping */
 	char *path;
 	int kind;
+	int stream; /* OPDS-PSE stream: open from the params below, not from path */
+	char tmpl[LSRC_TMPL_MAX];
+	char user[LSRC_CRED_MAX], pass[LSRC_CRED_MAX];
+	int stream_count;
+	volatile int fetch_cancel; /* set by loader_want/close: aborts a slow page fetch */
 	lsrc_t src; /* worker only */
 
 	pthread_mutex_t mu;
@@ -83,7 +91,12 @@ static void record_failure_locked(loader_t *l, const lkey_t *k, const char *msg)
 static int open_book(loader_t *l)
 {
 	char err[ERR_CAP] = "";
-	int n = lsrc_open(&l->src, l->path, l->kind, err, sizeof err);
+	int n;
+	if (l->stream)
+		n = lsrc_open_stream(&l->src, l->tmpl, l->stream_count, l->user, l->pass,
+		                     &l->fetch_cancel, err, sizeof err);
+	else
+		n = lsrc_open(&l->src, l->path, l->kind, err, sizeof err);
 	int *nw = NULL, *nh = NULL, *rc = NULL;
 	if (n > 0) {
 		nw = calloc((size_t)n, sizeof *nw);
@@ -130,6 +143,7 @@ static int open_book(loader_t *l)
 static void *worker(void *arg)
 {
 	loader_t *l = arg;
+	affinity_use_all_cores();
 	if (!open_book(l)) {
 		lsrc_close(&l->src);
 		return NULL;
@@ -143,12 +157,20 @@ static void *worker(void *arg)
 		}
 		lkey_t k = l->wish[i];
 		l->busy = 1;
+		l->fetch_cancel = 0; /* this render's fetch may run to completion */
 		l->renders[k.page]++;
 		pthread_mutex_unlock(&l->mu);
 
 		char err[ERR_CAP] = "";
 		lpage_t *p = lsrc_render(&l->src, k.page, k.max_w, k.max_h, l->budget, err, sizeof err);
 		int rc = PC_OK, sw = 0, sh = 0;
+		pthread_mutex_lock(&l->mu);
+		if (l->quit || !in_list(l->wish, l->nwish, &k)) {
+			lpage_free(p, NULL);
+			l->busy = 0;
+			continue; /* loop continues with mu held */
+		}
+		pthread_mutex_unlock(&l->mu);
 		if (p) {
 			sw = p->pub.src_w; /* p may be evicted (freed) as soon as it is in the cache */
 			sh = p->pub.src_h;
@@ -211,10 +233,26 @@ loader_t *loader_open(const char *path, int db_kind)
 	return loader_open_cap(path, db_kind, LOADER_CACHE_BYTES);
 }
 
+loader_t *loader_open_stream(const char *tmpl, int count, const char *user, const char *pass)
+{
+	loader_t *l;
+
+	if (!tmpl || !tmpl[0] || strlen(tmpl) >= LSRC_TMPL_MAX || count <= 0) return NULL;
+	l = loader_open_cap("", DB_KIND_STREAM, LOADER_CACHE_BYTES);
+	if (!l) return NULL;
+	l->stream = 1;
+	snprintf(l->tmpl, sizeof l->tmpl, "%s", tmpl);
+	snprintf(l->user, sizeof l->user, "%s", user ? user : "");
+	snprintf(l->pass, sizeof l->pass, "%s", pass ? pass : "");
+	l->stream_count = count;
+	return l;
+}
+
 void loader_close(loader_t *l)
 {
 	if (!l) return;
 	pthread_mutex_lock(&l->mu);
+	l->fetch_cancel = 1; /* do not wait out a slow streamed page */
 	l->quit = 1;
 	pthread_cond_broadcast(&l->cv);
 	pthread_mutex_unlock(&l->mu);
@@ -296,6 +334,7 @@ void loader_want(loader_t *l, const loader_req_t *reqs, int n)
 	}
 	memcpy(l->wish, list, sizeof list[0] * (size_t)m);
 	l->nwish = m;
+	l->fetch_cancel = 1; /* a stale streamed page stops fetching (and resumes later) */
 	/* Failures that left the list may be retried when they come back. */
 	int keep = 0;
 	for (int i = 0; i < l->nfailed; i++)

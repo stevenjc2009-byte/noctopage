@@ -38,10 +38,11 @@ typedef struct {
 	fit_mode_t fit;
 	int dim;          /* 0..DIM_LEVELS-1 */
 	int overlay;
+	int stream;       /* OPDS-PSE stream: no library row, so no progress or bookmarks */
 	int rot;          /* clockwise quarter turns, paged modes only (per book) */
 	int spreads;      /* 0 off, 1 double pages, 2 double pages with the cover alone (per book) */
 	int crop;         /* crop white borders, paged modes only (per book) */
-	uint64_t now;
+	uint64_t now, stick_at;
 
 	/* paged */
 	fit_view_t view;

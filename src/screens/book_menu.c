@@ -2,19 +2,24 @@
  * margins, line spacing, font, page theme, contents and bookmarks. A setting opens a second
  * menu listing its choices; contents and bookmarks open a list. */
 #include "screens/book_priv.h"
+#include "app.h"
 
 #include "core/log.h"
+#include "core/strutil.h"
+#include "core/strutil.h"
 #include "core/prefs.h"
 #include "ui/listview.h"
 #include "ui/menu.h"
+#include "ui/osk.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define BM_MAX 200
 
-enum { M_FONT, M_MARGIN, M_SPACING, M_FAMILY, M_THEME, M_CONTENTS, M_ADD_BM, M_BOOKMARKS,
-       M_COUNT };
+enum { M_FONT, M_MARGIN, M_SPACING, M_FAMILY, M_THEME, M_GOTO, M_FIND, M_CONTENTS, M_ADD_BM, M_BOOKMARKS,
+       M_PRIVATE, M_SERIES_SETTINGS, M_NEXT, M_COUNT };
 
 static const int FONT_PX[] = {16, 18, 20, 22, 24, 28, 32, 36, 40};
 static const int MARGINS[] = {0, 16, 32, 48, 64, 96};
@@ -22,8 +27,8 @@ static const int SPACING10[] = {10, 12, 14, 16, 18, 20};
 #define COUNT(a) ((int)(sizeof a / sizeof a[0]))
 
 static char g_label[M_COUNT][64];
-static const char *g_ptr[MENU_MAX];
-static char g_choice[MENU_MAX][32];
+static const char *g_ptr[M_COUNT];
+static char g_choice[M_COUNT][32];
 static int g_sub = -1; /* the setting whose choices are shown, -1 = main menu */
 
 static enum { L_NONE, L_TOC, L_BM } g_list;
@@ -58,12 +63,18 @@ void book_menu_open(void)
 	snprintf(g_label[M_SPACING], 64, "Line spacing: %.1f", (double)B.style.line_spacing);
 	snprintf(g_label[M_FAMILY], 64, "Font: %s", B.style.font_family ? "Sans-serif" : "Book's own");
 	snprintf(g_label[M_THEME], 64, "Page: %s", book_theme_name());
+	snprintf(g_label[M_GOTO], 64, "Go to page");
+	snprintf(g_label[M_FIND], 64, "Find in book");
 	snprintf(g_label[M_CONTENTS], 64, "Contents");
 	snprintf(g_label[M_ADD_BM], 64, "Add bookmark");
 	snprintf(g_label[M_BOOKMARKS], 64, "Bookmarks");
+	snprintf(g_label[M_PRIVATE], 64, "%s", B.book.private_book ? "Move to Your shelf" : "Move to Private");
+	snprintf(g_label[M_SERIES_SETTINGS],64,"Use these settings for this series");
+ snprintf(g_label[M_NEXT], 64, "Next volume");
 	for (int i = 0; i < M_COUNT; i++) g_ptr[i] = g_label[i];
 	g_sub = -1;
-	menu_open(B.book.title, g_ptr, M_COUNT);
+	db_book_t next;
+	menu_open(B.book.title, g_ptr, db_next_volume(B.book.id, &next) == 1 ? M_COUNT : M_NEXT);
 }
 
 static void open_choices(int setting)
@@ -159,8 +170,37 @@ static void pick(int id)
 	case M_FAMILY: open_choices(id); break;
 	case M_THEME:
 		B.theme = (B.theme + 1) % BOOK_THEMES;
-		prefs_set_int("book", "theme", B.theme);
+		{ char value[16]; snprintf(value,sizeof value,"%d",B.theme); db_book_setting_set(B.book.id,"theme",value); }
 		break;
+	case M_PRIVATE:
+		if (db_set_private(B.book.id, !B.book.private_book) == 0) { B.book.private_book = !B.book.private_book; app_private_moved(B.book.private_book); }
+		else app_message("Could not move volume");
+		break;
+	case M_SERIES_SETTINGS: {
+  book_restyle(); char value[16]; snprintf(value,sizeof value,"%d",B.theme); db_book_setting_set(B.book.id,"theme",value);
+  app_message(db_apply_series_settings(B.book.id)<0 ? "Could not save series defaults":"Settings applied across this series"); break;
+ }
+ case M_NEXT: app_request_next(B.book.id); break;
+	case M_GOTO: {
+		char buf[16];
+		if (osk_prompt("Go to page", "", OSK_TEXT, buf, sizeof buf) == 1 && B.count > 0) {
+			int p;
+			if (str_page_number(buf, B.count, &p)) book_goto(p - 1);
+			else app_message("Enter a valid page number");
+		}
+		break;
+	}
+	case M_FIND: {
+		/* Repeating the same query continues after the current page (find next). */
+		static char last[BOOKLD_FIND_MAX];
+		char buf[BOOKLD_FIND_MAX];
+		if (osk_prompt("Find in book", last, OSK_TEXT, buf, sizeof buf) != 1 || !buf[0]) break;
+		int start = buf[0] && !strcmp(buf, last) ? B.page + 1 : B.page;
+		snprintf(last, sizeof last, "%s", buf);
+		bookld_find(B.bl, buf, start);
+		log_printf("book: finding \"%s\"", buf);
+		break;
+	}
 	case M_CONTENTS: open_contents(); break;
 	case M_ADD_BM: add_bookmark(); break;
 	case M_BOOKMARKS:
@@ -181,7 +221,8 @@ void book_menu_update(const input_t *in)
 		} else if (a == LV_PICK && g_list == L_BM) {
 			bookld_resolve(B.bl, g_bm[i].location); /* the layout may have changed since */
 		} else if (a == LV_DELETE && g_list == L_BM) {
-			db_bookmark_remove(g_bm[i].id);
+			if (db_bookmark_remove(g_bm[i].id) < 0)
+				log_printf("book: bookmark delete: %s", db_last_error());
 			load_bookmarks();
 			listview_set_items(g_items, g_nbm);
 		}

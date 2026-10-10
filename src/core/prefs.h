@@ -11,4 +11,5 @@ void prefs_set_int(const char *section, const char *key, long value);
 const char *prefs_get(const char *section, const char *key, const char *def);
 void prefs_set(const char *section, const char *key, const char *value);
 
+int prefs_set_checked(const char *section,const char *key,const char *value);
 #endif

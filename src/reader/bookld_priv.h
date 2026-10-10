@@ -48,6 +48,8 @@ struct bookld {
 	int fixed;           /* fixed layout (PDF ...): styles are ignored, pages fit the screen */
 	int busy;            /* a style change is pending or being laid out */
 	int jump_serial, jump_page;
+	int find_pending, find_start, find_serial, find_page;
+	char find_query[BOOKLD_FIND_MAX];
 	bookld_style_t style; /* latest requested style */
 	int style_pending, keep_page, keep_gen;
 	int resolve_pending;

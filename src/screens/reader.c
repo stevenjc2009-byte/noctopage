@@ -4,6 +4,7 @@
 #include "screens/reader_priv.h"
 
 #include "core/log.h"
+#include "lib/reading_clock.h"
 #include "core/prefs.h"
 
 #include <stdio.h>
@@ -12,6 +13,17 @@
 
 reader_t R;
 static int g_open;
+static reading_clock_t g_clock;
+static void reading_flush(void)
+{
+	if (R.stream) return; /* streams have no library row to charge time to */
+	if (!g_clock.milliseconds && !g_clock.pages) return;
+	if (db_reading_add(R.book.id, g_clock.milliseconds, g_clock.pages) >= 0) {
+		g_clock.milliseconds = 0;
+		g_clock.pages = 0;
+	}
+}
+
 static int g_last_wish_page = -1, g_last_wish_box, g_last_wish_scroll;
 
 int reader_is_open(void) { return g_open; }
@@ -20,6 +32,7 @@ void reader_open(const db_book_t *b)
 {
 	if (g_open) reader_close();
 	memset(&R, 0, sizeof R);
+	memset(&g_clock, 0, sizeof g_clock);
 	R.book = *b;
 	R.mode = (read_mode_t)reader_setting("mode", RM_LTR, 0, RM_COUNT - 1);
 	R.fit = (fit_mode_t)reader_setting("fit", FIT_SMART, FIT_WIDTH, FIT_ORIGINAL);
@@ -33,7 +46,7 @@ void reader_open(const db_book_t *b)
 	R.saved_page = b->page;
 	R.failed_page = -1;
 	char rot[8];
-	if (db_book_setting_get(b->id, "rotate", rot, sizeof rot) == 1) R.rot = atoi(rot) & 3;
+	if (db_effective_setting(b->id, "rotate", rot, sizeof rot) == 1) R.rot = atoi(rot) & 3;
 	tapsm_init(&R.tap, 1);
 	g_last_wish_page = -1;
 	R.ld = loader_open(b->path, b->kind);
@@ -42,9 +55,37 @@ void reader_open(const db_book_t *b)
 	log_printf("reader: open %s (kind %d, page %d)", b->path, b->kind, b->page);
 }
 
+void reader_open_stream(const char *title, const char *tmpl, int count, const char *user,
+                        const char *pass)
+{
+	if (g_open) reader_close();
+	memset(&R, 0, sizeof R);
+	memset(&g_clock, 0, sizeof g_clock);
+	snprintf(R.book.title, sizeof R.book.title, "%s", title ? title : "");
+	R.book.kind = DB_KIND_STREAM;
+	R.stream = 1;
+	R.mode = (read_mode_t)reader_setting("mode", RM_LTR, 0, RM_COUNT - 1);
+	R.fit = (fit_mode_t)reader_setting("fit", FIT_SMART, FIT_WIDTH, FIT_ORIGINAL);
+	R.spreads = reader_setting("spreads", 0, 0, 2);
+	R.crop = reader_setting("crop", 0, 0, 1);
+	R.dim = (int)prefs_get_int("reader", "dim", 0);
+	if (R.dim < 0 || R.dim >= DIM_LEVELS) R.dim = 0;
+	fit_view_init(&R.view, SCREEN_W, SCREEN_H);
+	R.view.mode = R.fit;
+	R.strip_zoom = 1.0f;
+	R.failed_page = -1;
+	tapsm_init(&R.tap, 1);
+	g_last_wish_page = -1;
+	R.ld = loader_open_stream(tmpl, count, user, pass);
+	if (!R.ld) snprintf(R.err, sizeof R.err, "out of memory");
+	g_open = 1;
+	log_printf("reader: stream %s (%d pages)", tmpl ? tmpl : "", count);
+}
+
 void reader_close(void)
 {
 	if (!g_open) return;
+	reading_flush();
 	reader_save(1);
 	if (R.ld) loader_close(R.ld);
 	R.ld = NULL;
@@ -142,6 +183,10 @@ void reader_update(const input_t *in)
 {
 	if (!g_open) return;
 	R.now = in->now_ms;
+	reading_clock_tick(&g_clock, in->now_ms, R.page, (R.count > 0 && !R.err[0] && R.failed_page != R.page) && !reader_menu_is_open(),
+	                   in->pressed || in->touch_count || in->lx < 108 || in->lx > 148 ||
+	                   in->ly < 108 || in->ly > 148 || in->ry < 100 || in->ry > 156);
+	if (g_clock.milliseconds >= 30000 || g_clock.pages >= 10) reading_flush();
 	rtex_new_frame();
 	char err[160];
 	loader_status_t st = R.ld ? loader_status(R.ld, err, sizeof err) : LOADER_FAILED;

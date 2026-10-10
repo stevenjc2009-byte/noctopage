@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#define MENU_MAX 10
+#define MENU_MAX 24
 
 /* labels are copied pointers: keep them alive while the menu is open (literals). */
 void menu_open(const char *title, const char *const *labels, int n);

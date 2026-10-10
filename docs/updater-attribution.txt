@@ -1,0 +1,15 @@
+NoctoPage updater: third-party attribution
+
+The 1,072-byte sce_sys/package/head.bin template and fake-package header construction
+come from VitaShell, Copyright (C) 2015-2018 TheFloW, GPL-3.0-or-later.
+Source: https://github.com/TheOfficialFloW/VitaShell
+Original template: https://github.com/TheOfficialFloW/VitaShell/blob/master/resources/head.bin
+Header construction: https://github.com/TheOfficialFloW/VitaShell/blob/master/package_installer.c
+The generated header is modified for NoctoPage title ID NOCT00001.
+NoctoPage is AGPL-3.0; the combined distribution remains AGPL-3.0.
+The accompanying GPL-3.0 licence is GPL-3.0-VitaShell.txt.
+
+The Vita promoter initialisation follows the API use shown by VitaShell.
+Catalogue adapters use the documented Internet Archive and MediaWiki JSON APIs.
+Comic licences belong to their respective providers and creators; Commons details
+include the licence returned by its API.

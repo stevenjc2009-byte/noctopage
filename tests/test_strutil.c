@@ -132,5 +132,5 @@ int main(void)
     test_trim();
     test_join();
     test_basename_dirname_ext();
-    return TEST_DONE("strutil");
+    int page; CHECK(str_page_number("18",100,&page)); CHECK_INT(page,18); CHECK(!str_page_number("18abc",100,&page)); CHECK(!str_page_number("999999999999999999",100,&page)); return TEST_DONE("strutil");
 }

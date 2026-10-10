@@ -112,4 +112,9 @@ int mdoc_render_cover(const char *path, int max_w, int max_h, mdoc_image_t *out)
  * of items written (<= max), 0 when the document has no outline, -1 on error. */
 int mdoc_toc(mdoc_t *doc, mdoc_toc_item_t *out, int max);
 
+/* First page at or after start whose extracted text contains query (ASCII
+ * case-insensitive), or -1 when nothing matches. Empty query and errors give -1.
+ * Scanned pages (no text layer) never match. */
+int mdoc_find_page(mdoc_t *d, int start, const char *query);
+
 #endif

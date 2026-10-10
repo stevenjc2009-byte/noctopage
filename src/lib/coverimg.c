@@ -154,3 +154,27 @@ int coverimg_load(const char *file, uint8_t *rgba)
 	fclose(f);
 	return ok ? 0 : -1;
 }
+
+int coverimg_file(const char *path, uint8_t *out, char *err, size_t cap)
+{
+	if (coverimg_load(path, out) == 0) return 0;
+	FILE *f = fopen(path, "rb");
+	long n;
+	if (!f) { set_err(err, cap, "cannot open custom cover"); return -1; }
+	if (fseek(f, 0, SEEK_END) != 0) {
+		fclose(f); set_err(err, cap, "cannot read custom cover"); return -1;
+	}
+	n = ftell(f); /* read once: error (negative) and empty (zero) are different */
+	if (n <= 0 || (uint64_t)n > 16u * 1024u * 1024u) {
+		fclose(f); set_err(err, cap, "invalid cover size (max 16 MB)"); return -1;
+	}
+	size_t len = (size_t)n; /* n > 0 here, so the cast is exact */
+	uint8_t *buf = malloc(len);
+	int r = -1;
+	if (buf && !fseek(f, 0, SEEK_SET) && fread(buf, 1, len, f) == len)
+		r = from_bytes(buf, len, out, err, cap);
+	else set_err(err, cap, "cannot read custom cover");
+	free(buf);
+	fclose(f);
+	return r;
+}

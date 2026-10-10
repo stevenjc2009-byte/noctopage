@@ -1,5 +1,6 @@
 /* Noctopage - PS Vita manga + e-book reader. Boot and main loop. */
 #include "app.h"
+#include "core/affinity.h"
 #include "core/autotest.h"
 #include "core/log.h"
 #include "core/paths.h"
@@ -11,9 +12,13 @@
 #include "net/dlq.h"
 #include "net/fetch.h"
 #include "net/http.h"
+#include "net/wifi_import.h"
+#include "screens/utilities.h"
+#include "screens/updater.h"
 #include "ui/font.h"
 #include "ui/input.h"
 #include "ui/osk.h"
+#include "ui/texcache.h"
 #include "ui/theme.h"
 
 #include <archive.h>
@@ -34,6 +39,7 @@ int main(void)
 {
 	paths_init();
 	log_reset();
+	affinity_use_all_cores(); /* the main thread may run on CPU3 too, when unlocked */
 	/* libarchive converts entry names to the locale's charset; in newlib's default "C"
 	 * locale every non-ASCII name (e.g. Japanese UTF-8 zip entries) comes back NULL. */
 	if (!setlocale(LC_CTYPE, "C.UTF-8")) log_printf("setlocale C.UTF-8 failed");
@@ -62,16 +68,23 @@ int main(void)
 	sceIoMkdir(PATH_BOOKS_DIR, 0777); /* downloads go here; fails harmlessly if it exists */
 	if (dlq_start(PATH_BOOKS_DIR) < 0) log_printf("dlq: start failed");
 	app_init();
+ updater_init();
 	autotest_init();
 	log_printf("ready: confirm button is %s", input_confirm_is_cross() ? "Cross" : "Circle");
 
 	input_t in;
+	int rescan_pending = 0;
 	while (!app_quit_requested()) {
 		autotest_tick(sceKernelGetProcessTimeWide() / 1000);
 		input_poll(&in);
+		utilities_sleep_tick(in.now_ms, in.pressed || in.held || in.touch_count);
 		app_update(&in);
-		covers_pump(2);
-		if (dlq_pump() > 0) library_scan_start(); /* a download finished: list it */
+		if (utilities_keep_awake() || updater_busy()) sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DEFAULT);
+		covers_pump(6); /* drain finished covers fast so art appears instantly */
+		texcache_new_frame();
+		if (dlq_pump() > 0) rescan_pending = 1;
+		if (wifi_import_pump() > 0) rescan_pending = 1;
+		if (rescan_pending && !utilities_working() && !library_scan_running()) { library_scan_start(); rescan_pending = 0; }
 
 		vita2d_set_clear_color(theme_bg());
 		vita2d_start_drawing();
@@ -84,11 +97,16 @@ int main(void)
 	/* No vita2d_fini / font frees: both hang under Vita3K, and the process is
 	 * ending anyway. */
 	app_shutdown();
+ updater_stop();
 	dlq_stop();
 	fetch_stop();
-	http_global_cleanup();
+	library_scan_stop();
+	covers_shutdown();
+	db_close();
+ http_global_cleanup();
 	osk_shutdown();
-	log_printf("quit");
+	updater_install();
+ log_printf("quit");
 	sceKernelExitProcess(0);
 	return 0;
 }

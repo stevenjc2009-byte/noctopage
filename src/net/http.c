@@ -3,6 +3,7 @@
 #include "core/strutil.h"
 
 #include <curl/curl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +29,30 @@ int dlq_name_disposition(const char *value, char *out, size_t cap);
 int dlq_name_from_url(const char *url, char *out, size_t cap);
 
 static char g_ca[512];
-static int g_ready;
+static int g_ready, g_easy_key_ready;
+static pthread_key_t g_easy_key;
+
+static void easy_destroy(void *c) { curl_easy_cleanup(c); }
+static CURL *easy_acquire(void)
+{
+	CURL *c = g_easy_key_ready ? pthread_getspecific(g_easy_key) : NULL;
+	if (!c) {
+		c = curl_easy_init();
+		if (c && g_easy_key_ready && pthread_setspecific(g_easy_key, c)) {
+			curl_easy_cleanup(c);
+			return NULL;
+		}
+	}
+	if (c) curl_easy_reset(c); /* retains connections, DNS and TLS sessions */
+	return c;
+}
+
+static void easy_release(CURL *c)
+{
+	/* Clear stack-based callbacks and credentials, retaining only curl's caches. */
+	if (g_easy_key_ready) curl_easy_reset(c);
+	else curl_easy_cleanup(c);
+}
 
 typedef struct {
 	CURL *c;
@@ -45,6 +69,7 @@ typedef struct {
 	FILE *f;
 	int64_t offset; /* bytes already in the file before this reply's body */
 	int write_err, bad_range;
+	char *file_buffer;
 	/* headers of the latest reply (each redirect hop starts over) */
 	int64_t range_start; /* Content-Range start, -1 when absent */
 	char disp[512];
@@ -58,6 +83,7 @@ int http_global_init(const char *ca_file)
 		http_vita_net_down();
 		return -1;
 	}
+	g_easy_key_ready = pthread_key_create(&g_easy_key, easy_destroy) == 0;
 	str_copy(g_ca, sizeof g_ca, ca_file ? ca_file : "");
 	g_ready = 1;
 	return 0;
@@ -66,6 +92,13 @@ int http_global_init(const char *ca_file)
 void http_global_cleanup(void)
 {
 	if (!g_ready) return;
+	/* All HTTP worker threads must be joined before global cleanup. */
+	if (g_easy_key_ready) {
+		CURL *c = pthread_getspecific(g_easy_key);
+		if (c) { pthread_setspecific(g_easy_key, NULL); curl_easy_cleanup(c); }
+		pthread_key_delete(g_easy_key);
+		g_easy_key_ready = 0;
+	}
 	curl_global_cleanup();
 	http_vita_net_down();
 	g_ready = 0;
@@ -171,6 +204,12 @@ static int open_sink(xfer_t *x)
 		x->f = fopen(x->path, "wb");
 	}
 	if (!x->f) x->write_err = 1;
+	else {
+		x->file_buffer = malloc(128u * 1024u);
+		if (x->file_buffer && setvbuf(x->f, x->file_buffer, _IOFBF, 128u * 1024u)) {
+			free(x->file_buffer); x->file_buffer = NULL;
+		}
+	}
 	return x->f ? 0 : -1;
 }
 
@@ -190,7 +229,7 @@ static size_t file_write(char *p, size_t size, size_t nmemb, void *ud)
 
 static CURL *easy_new(const char *url, const http_auth_t *auth, xfer_t *x, char *errbuf)
 {
-	CURL *c = curl_easy_init();
+	CURL *c = easy_acquire();
 	if (!c) return NULL;
 	x->c = c;
 	x->range_start = -1;
@@ -206,6 +245,9 @@ static CURL *easy_new(const char *url, const http_auth_t *auth, xfer_t *x, char 
 	curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 1L);
 	curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, STALL_TIMEOUT_S);
 	curl_easy_setopt(c, CURLOPT_NOSIGNAL, 1L);
+	curl_easy_setopt(c, CURLOPT_MAXCONNECTS, 4L);
+	curl_easy_setopt(c, CURLOPT_BUFFERSIZE, 64L * 1024L);
+	curl_easy_setopt(c, CURLOPT_TCP_NODELAY, 1L);
 	if (g_ca[0]) curl_easy_setopt(c, CURLOPT_CAINFO, g_ca);
 	curl_easy_setopt(c, CURLOPT_SSL_VERIFYPEER, 1L);
 	curl_easy_setopt(c, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -250,7 +292,7 @@ static int result(xfer_t *x, CURLcode rc, long status, const char *errbuf, char 
 }
 
 int http_get(const char *url, const http_auth_t *auth, size_t max_bytes, const volatile int *cancel,
-             http_doc_t *out, char *err, size_t errcap)
+			 http_doc_t *out, char *err, size_t errcap)
 {
 	char errbuf[CURL_ERROR_SIZE];
 	xfer_t x;
@@ -289,10 +331,10 @@ int http_get(const char *url, const http_auth_t *auth, size_t max_bytes, const v
 		s = NULL;
 		curl_easy_getinfo(c, CURLINFO_EFFECTIVE_URL, &s);
 		str_copy(out->final_url, sizeof out->final_url, s ? s : url);
-		curl_easy_cleanup(c);
+		easy_release(c);
 		return 0;
 	}
-	curl_easy_cleanup(c);
+	easy_release(c);
 	free(x.data);
 	out->status = status;
 	return -1;
@@ -306,8 +348,8 @@ void http_doc_free(http_doc_t *d)
 }
 
 int http_download(const char *url, const http_auth_t *auth, const char *part_path,
-                  int64_t resume_from, http_progress_fn progress, void *ud, char *filename,
-                  size_t filename_cap, char *err, size_t errcap)
+				  int64_t resume_from, http_progress_fn progress, void *ud, char *filename,
+				  size_t filename_cap, char *err, size_t errcap)
 {
 	char errbuf[CURL_ERROR_SIZE];
 	struct stat st;
@@ -343,12 +385,13 @@ int http_download(const char *url, const http_auth_t *auth, const char *part_pat
 		/* The server would not continue the .part: no Range support (curl refuses the 200, or
 		 * skips its body when the size equals the offset), or the range starts at or past the
 		 * end. The .part is not a prefix we can trust: start over. */
-		curl_easy_cleanup(c);
+		easy_release(c);
 		return http_download(url, auth, part_path, 0, progress, ud, filename, filename_cap, err, errcap);
 	}
 	if (!x.f && rc == CURLE_OK && status >= 200 && status <= 299 && !x.cancelled)
 		open_sink(&x); /* empty body: still an (empty) file */
 	if (x.f && fclose(x.f) != 0) x.write_err = 1;
+	free(x.file_buffer);
 	int r = result(&x, rc, status, errbuf, err, errcap);
 	if (r == 0 && filename && filename_cap) {
 		const char *eff = NULL;
@@ -356,6 +399,6 @@ int http_download(const char *url, const http_auth_t *auth, const char *part_pat
 		if (!dlq_name_disposition(x.disp, filename, filename_cap))
 			dlq_name_from_url(eff ? eff : url, filename, filename_cap);
 	}
-	curl_easy_cleanup(c);
+	easy_release(c);
 	return r;
 }

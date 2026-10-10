@@ -31,6 +31,9 @@ int fetch_get(const char *url, const http_auth_t *auth);
 /* Queue a GET whose body is decoded as an image fitting max_w x max_h (img_decode). */
 int fetch_image(const char *url, const http_auth_t *auth, int max_w, int max_h);
 
+/* Load and decode a local image on the worker (max FETCH_MAX_BODY bytes). */
+int fetch_file_image(const char *path, int max_w, int max_h);
+
 /* State of a request; FETCH_UNKNOWN for an id never issued or already taken/forgotten. */
 fetch_state_t fetch_state(int id);
 /* When the request is DONE or FAILED: move its result into *out (caller frees with

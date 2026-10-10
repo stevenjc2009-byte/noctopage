@@ -13,6 +13,10 @@
 typedef struct archive_t archive_t;
 typedef struct folder_t folder_t;
 
+/* Longest PSE template / credential kept per streamed book (worker thread only). */
+#define LSRC_TMPL_MAX 2048
+#define LSRC_CRED_MAX 128
+
 /* An open book, used by the worker thread only. */
 typedef struct {
 	int kind;       /* DB_KIND_* */
@@ -20,6 +24,10 @@ typedef struct {
 	folder_t *fold; /* DB_KIND_FOLDER */
 	int *idx;       /* comics: page -> entry index (pagelist order) */
 	mdoc_t *doc;    /* DB_KIND_FIXED */
+	char tmpl[LSRC_TMPL_MAX];   /* DB_KIND_STREAM: PSE page template */
+	char user[LSRC_CRED_MAX];   /* DB_KIND_STREAM: HTTP Basic credentials */
+	char pass[LSRC_CRED_MAX];
+	volatile int *cancel; /* DB_KIND_STREAM: set to abort the in-flight fetch */
 	int n;          /* page count */
 } lsrc_t;
 
@@ -46,6 +54,10 @@ static inline int loader_variant(int max_w, int max_h)
 
 /* Open the book: returns the page count (> 0) or -1 with a message in err. */
 int lsrc_open(lsrc_t *s, const char *path, int kind, char *err, size_t cap);
+/* Open an OPDS-PSE stream (worker thread only): template, page count, credentials.
+ * cancel (may be NULL) aborts an in-flight page fetch. Prunes the stream disk cache. */
+int lsrc_open_stream(lsrc_t *s, const char *tmpl, int count, const char *user,
+                     const char *pass, volatile int *cancel, char *err, size_t cap);
 void lsrc_close(lsrc_t *s);
 /* Documents only: page size in points, rounded. 0 or -1. */
 int lsrc_doc_size(lsrc_t *s, int page, int *w, int *h);

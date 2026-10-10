@@ -97,6 +97,8 @@ static void read_touch(input_t *in)
 		for (int j = 0; j < g_prev_touch_n; j++)
 			if (g_prev_touch_ids[j] == in->touch[i].id)
 				known = 1;
+		/* Any newly-landed finger is a began, including a second finger during a
+		 * touch (pinch start); only the first one per frame is reported. */
 		if (!known && !in->touch_began) {
 			in->touch_began = 1;
 			in->began_x = in->touch[i].x;
@@ -124,9 +126,11 @@ void input_poll(input_t *in)
 	uint32_t pressed  = held & ~g_prev_held;
 	uint32_t released = g_prev_held & ~held;
 
-	/* D-pad key repeat: first repeat after 400 ms, then every 80 ms. */
+	/* D-pad key repeat: first repeat after 400 ms, then every 80 ms. The bits are
+	 * named explicitly so a future button-map change cannot silently rewire this. */
+	static const uint32_t k_repeat_bits[4] = { IN_UP, IN_DOWN, IN_LEFT, IN_RIGHT };
 	for (int i = 0; i < 4; i++) {
-		uint32_t bit = 1u << i;
+		uint32_t bit = k_repeat_bits[i];
 		if (!(held & bit))
 			continue;
 		if (pressed & bit) {

@@ -98,7 +98,7 @@ static void test_open_migrate(void)
 	CHECK_INT(db_open(p), -1); /* already open */
 	CHECK_INT(add(1, "ux0:a.cbz", "A"), 1);
 	db_close();
-	CHECK_INT(user_version(p), 1);
+	CHECK_INT(user_version(p), 3);
 	/* An existing file at user_version 0 migrates too. */
 	p = fresh_path("migrate0");
 	CHECK_INT(sqlite3_open(p, &d), SQLITE_OK);
@@ -108,7 +108,7 @@ static void test_open_migrate(void)
 	CHECK_INT(db_open(p), 0);
 	CHECK_INT(add(1, "ux0:a.cbz", "A"), 1);
 	db_close();
-	CHECK_INT(user_version(p), 1);
+	CHECK_INT(user_version(p), 3);
 	/* A newer database is refused, and the failed open leaves nothing open. */
 	CHECK_INT(sqlite3_open(p, &d), SQLITE_OK);
 	sqlite3_exec(d, "PRAGMA user_version=99", NULL, NULL, NULL);

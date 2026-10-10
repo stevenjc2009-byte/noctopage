@@ -54,6 +54,12 @@ typedef struct loader loader_t;
 /* Start loading a book. Never blocks on the file: opening happens on the worker.
  * Returns NULL only when out of memory or the thread cannot start. */
 loader_t *loader_open(const char *path, int db_kind);
+
+/* Open an OPDS-PSE stream: count pages served from template (see opds_pse_url),
+ * fetched with HTTP Basic (user/pass, "" = none) and cached on disk. The wish list
+ * aborts the in-flight page fetch, which resumes where it stopped. Never blocks on
+ * the network: opening only copies its arguments; page count is known up front. */
+loader_t *loader_open_stream(const char *tmpl, int count, const char *user, const char *pass);
 /* Stops the worker (an in-flight decode finishes first), frees everything. NULL is fine.
  * Pages still held from loader_get must have been released. */
 void loader_close(loader_t *l);

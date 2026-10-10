@@ -1,5 +1,6 @@
 #include "net/dlq.h"
 
+#include "core/affinity.h"
 #include "core/strutil.h"
 #include "lib/db.h"
 
@@ -19,7 +20,7 @@ int dlq_name_make(const char *dir, const char *title, const char *ext, const cha
 typedef struct {
 	int used;
 	dlq_item_t it;    /* what dlq_list shows; worker and main thread, under g_mu */
-	char url[512];
+	char url[HTTP_URL_MAX];
 	char *user, *pass; /* memory only, never written to the database */
 	int dirty;        /* state or error changed since the last database write */
 	int64_t db_bytes; /* bytes at the last database write */
@@ -104,7 +105,7 @@ static int on_progress(void *ud, int64_t now, int64_t total)
  * dlq_remove refuses an ACTIVE download and dlq_stop joins this thread first. */
 static void run_one(slot_t *s)
 {
-	char url[512], dest[512], part[520], err[128] = "";
+	char url[HTTP_URL_MAX], dest[512], part[520], err[128] = "";
 	http_auth_t a = { s->user, s->pass };
 	str_copy(url, sizeof url, s->url);
 	str_copy(dest, sizeof dest, s->it.dest_path);
@@ -143,6 +144,7 @@ static void run_one(slot_t *s)
 static void *worker(void *arg)
 {
 	(void)arg;
+	affinity_use_all_cores();
 	pthread_mutex_lock(&g_mu);
 	for (;;) {
 		slot_t *s = NULL;

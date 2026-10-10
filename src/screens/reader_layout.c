@@ -21,7 +21,7 @@ static int *g_w, *g_h; /* scratch for spread_build */
 int reader_setting(const char *key, int def, int lo, int hi)
 {
 	char v[16];
-	long x = db_book_setting_get(R.book.id, key, v, sizeof v) == 1 ? atol(v)
+	long x = db_effective_setting(R.book.id, key, v, sizeof v) == 1 ? atol(v)
 	                                                                 : prefs_get_int("reader", key, def);
 	return x >= lo && x <= hi ? (int)x : def;
 }
@@ -143,8 +143,10 @@ static const uint8_t *page_row(const void *ud, int y)
 
 void reader_crop_note(const loader_page_t *p)
 {
-	if (!R.crop || !R.crop_known || p->page < 0 || p->page >= R.count || R.crop_known[p->page])
+	if (!R.crop || !R.crop_known || !p || p->page < 0 || p->page >= R.count || R.crop_known[p->page])
 		return;
+	if (p->w <= 0 || p->h <= 0 || p->ntiles <= 0 || !p->tiles)
+		return; /* corrupt/empty decode: page_row would read out of bounds */
 	crop_detect(page_row, p, p->w, p->h, &R.cropbox[p->page]);
 	R.crop_known[p->page] = 1;
 }

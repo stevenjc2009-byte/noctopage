@@ -1,10 +1,12 @@
 /* reader_input.c - buttons, sticks and touch for the comic reader (docs/PLAN.md Controls:
- * Right/R next, Left/L previous, mirrored in right-to-left; Up/Down scroll; Triangle
- * overlay; Square reading mode; Select dim; edge taps, pinch and double-tap zoom). */
+ * R next, L previous, mirrored in right-to-left (the d-pad and sticks only pan, they
+ * never turn pages); Up/Down scroll; Triangle overlay; Square reading mode; Select
+ * dim; edge taps, pinch and double-tap zoom). */
 #include "screens/reader_priv.h"
 
 #include "core/log.h"
 #include "core/prefs.h"
+#include "reader/stickzoom.h"
 
 #include <stdlib.h>
 
@@ -43,10 +45,14 @@ static void scroll_keys(const input_t *in)
 {
 	uint32_t fresh = in->pressed & ~R.prev_held;
 	int up = (in->held & IN_UP) != 0, down = (in->held & IN_DOWN) != 0;
+	int left = (in->held & IN_LEFT) != 0, right = (in->held & IN_RIGHT) != 0;
 	if (R.mode == RM_VERTICAL) {
 		if (up || down) reader_strip_pan(0, down ? -KEY_SCROLL : KEY_SCROLL);
+		if (left || right) reader_strip_pan(left ? KEY_SCROLL : -KEY_SCROLL, 0);
 		return;
 	}
+	if (known() && (left || right))
+		fit_pan_by(&R.view, pw(), ph(), left ? KEY_SCROLL : -KEY_SCROLL, 0);
 	if ((fresh & IN_DOWN) && at_end(1)) {
 		reader_step(1);
 		return;
@@ -85,12 +91,13 @@ void reader_handle_buttons(const input_t *in)
 		return;
 	}
 
-	uint32_t next = reader_rtl() ? (IN_LEFT | IN_L) : (IN_RIGHT | IN_R);
-	uint32_t prev = reader_rtl() ? (IN_RIGHT | IN_R) : (IN_LEFT | IN_L);
+	/* Page turns come from the shoulder buttons only: the d-pad and the sticks pan. */
+	uint32_t next = reader_rtl() ? IN_L : IN_R;
+	uint32_t prev = reader_rtl() ? IN_R : IN_L;
 	if (R.mode == RM_VERTICAL) {
 		float page = SCREEN_H - OVERLAY_BAR_H;
-		if (in->pressed & (IN_RIGHT | IN_R)) reader_strip_pan(0, -page);
-		if (in->pressed & (IN_LEFT | IN_L)) reader_strip_pan(0, page);
+		if (in->pressed & IN_R) reader_strip_pan(0, -page);
+		if (in->pressed & IN_L) reader_strip_pan(0, page);
 	} else if (in->pressed & next) {
 		reader_step(1);
 	} else if (in->pressed & prev) {
@@ -98,7 +105,18 @@ void reader_handle_buttons(const input_t *in)
 	}
 	scroll_keys(in);
 
-	float sx = stick(in->lx), sy = stick(in->ly);
+	unsigned dt = R.stick_at && in->now_ms >= R.stick_at
+        ? (unsigned)(in->now_ms - R.stick_at > 50 ? 50 : in->now_ms - R.stick_at) : 16;
+    R.stick_at = in->now_ms;
+    float factor = stickzoom_factor(in->ry, dt);
+    if (factor != 1.0f) {
+        if (R.mode == RM_VERTICAL)
+            reader_strip_zoom_at(R.strip_zoom * factor, SCREEN_W / 2.0f, SCREEN_H / 2.0f);
+        else if (known())
+            fit_set_zoom_at(&R.view, pw(), ph(), R.view.zoom * factor,
+                            SCREEN_W / 2.0f, SCREEN_H / 2.0f);
+    }
+    float sx = stick(in->lx), sy = stick(in->ly);
 	if (sx != 0 || sy != 0) {
 		if (R.mode == RM_VERTICAL)
 			reader_strip_pan(-sx, -sy);
@@ -113,6 +131,7 @@ void reader_handle_buttons(const input_t *in)
 static void on_tap(int x, int y)
 {
 	if (R.overlay) {
+		if (x >= 902 && y >= 8 && y < 56) { reader_menu_open(); return; }
 		if (y >= OVERLAY_BAR_H && y < SCREEN_H - OVERLAY_BAR_H) R.overlay = 0;
 		return;
 	}
@@ -200,8 +219,10 @@ void reader_handle_touch(const input_t *in)
 		}
 	}
 	if (in->touch_count == 0) {
+		int was_pinch = R.pinching;
 		R.pinching = 0;
-		if (R.swipe_dx <= -SWIPE_TURN || R.swipe_dx >= SWIPE_TURN) {
+		/* A pinch release must never turn the page: only a pure drag swipes. */
+		if (!was_pinch && (R.swipe_dx <= -SWIPE_TURN || R.swipe_dx >= SWIPE_TURN)) {
 			int forward = R.swipe_dx < 0; /* finger moved left: the next page comes in */
 			reader_step(forward != reader_rtl() ? 1 : -1);
 		}

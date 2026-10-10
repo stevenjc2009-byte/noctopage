@@ -25,6 +25,7 @@ typedef struct {
 	char pos[MDOC_POS_MAX]; /* position of the page on screen, once rendered */
 	char saved_pos[MDOC_POS_MAX];
 	int jump_serial;
+	int find_serial;
 	tapsm_t tap;
 	float swipe_dx;
 	int seeking, seek_page;

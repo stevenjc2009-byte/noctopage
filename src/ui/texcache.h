@@ -19,4 +19,7 @@ vita2d_texture *texcache_put_rgba(uint64_t key, const uint8_t *rgba, int w, int 
 void texcache_drop(uint64_t key);
 void texcache_clear(void);
 
+/* Age the retire list; call once per frame. MAIN THREAD ONLY. */
+void texcache_new_frame(void);
+
 #endif

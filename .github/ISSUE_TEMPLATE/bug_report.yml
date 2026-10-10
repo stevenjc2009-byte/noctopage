@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible NoctoPage problem
+body:
+  - type: input
+    id: version
+    attributes:
+      label: NoctoPage version
+      placeholder: "00.04"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Vita model and firmware
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps and expected/actual behaviour
+      description: Include the file format when relevant. Do not upload commercial comics.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log excerpt
+      description: Find ux0:data/noctopage/log.txt. Remove private titles, addresses and credentials.

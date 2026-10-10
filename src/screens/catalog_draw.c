@@ -4,6 +4,7 @@
 #include "screens/catalog_priv.h"
 
 #include "core/fnv.h"
+#include "net/catalog_downloads.h"
 #include "ui/draw.h"
 #include "ui/font.h"
 #include "ui/texcache.h"
@@ -16,8 +17,8 @@
 #define COVERS 96
 #define COVERS_IN_FLIGHT 12
 #define COVER_STALE_MS 1500 /* a pending cover nobody drew for this long is dropped */
-#define THUMB_W 40
-#define THUMB_H 60
+#define THUMB_W 164
+#define THUMB_H 230
 
 typedef struct {
 	uint64_t key;
@@ -29,7 +30,7 @@ static cover_t g_cov[COVERS];
 
 static uint64_t cover_key(const char *url, int big)
 {
-	return (fnv64(url, strlen(url)) | 1ULL << 63) ^ (uint64_t)big;
+	return ((fnv64(url, strlen(url)) ^ (C.source>=0?(uint64_t)C.src[C.source].server_id*0x9e3779b97f4a7c15ULL ^ fnv64(C.src[C.source].user,strlen(C.src[C.source].user)) ^ fnv64(C.src[C.source].pass,strlen(C.src[C.source].pass)):0)) | 1ULL << 63) ^ (uint64_t)big;
 }
 
 /* No GPU work, so safe in the draw step: a miss queues a fetch, and the update step
@@ -56,7 +57,7 @@ void *cat_cover(const char *url, int big)
 				free_i = i;
 		if (free_i < 0) return NULL;
 	}
-	int id = fetch_image(url, cat_auth(), big ? 180 : THUMB_W, big ? 270 : THUMB_H);
+	int id = fetch_image(url, cat_auth_url(url), big ? 180 : THUMB_W, big ? 270 : THUMB_H);
 	if (id <= 0) return NULL;
 	g_cov[free_i] = (cover_t){key, id, C.now};
 	return NULL;
@@ -100,7 +101,8 @@ static void cover_box(vita2d_texture *t, int x, int y, int w, int h)
 		return;
 	}
 	float tw = (float)vita2d_texture_get_width(t), th = (float)vita2d_texture_get_height(t);
-	float s = (float)w / tw < (float)h / th ? (float)w / tw : (float)h / th;
+	if(tw<=0 || th<=0) return;
+ float s = (float)w / tw < (float)h / th ? (float)w / tw : (float)h / th;
 	vita2d_draw_texture_scale(t, (float)x + ((float)w - tw * s) / 2,
 	                          (float)y + ((float)h - th * s) / 2, s, s);
 }
@@ -126,16 +128,16 @@ static void centred(int y, int px, unsigned colour, const char *s)
 
 void cat_draw_sources(void)
 {
-	header("Catalogs", NULL);
+	header("Browse sources", NULL);
 	int rows = C.nsrc + 1;
 	for (int r = C.src_top; r < rows && r < C.src_top + CAT_ROWS; r++) {
 		int y = CAT_HEAD_H + (r - C.src_top) * CAT_ROW_H;
 		if (r == C.src_sel) draw_rect(CAT_X0 - 8, y, CAT_W + 16, CAT_ROW_H - 4, THEME_SELECTED);
 		if (r == C.nsrc) {
 			line(CAT_X0 + 8, y + 12, CAT_W - 16, FONT_PX_TITLE, THEME_FONT,
-			     "+  Add server\xE2\x80\xA6");
+			     "+  Add custom catalogue\xE2\x80\xA6");
 			line(CAT_X0 + 8, y + 40, CAT_W - 16, FONT_PX_LABEL, THEME_SUBFONT,
-			     "Komga, Kavita, Calibre-Web or any OPDS catalog address");
+			     "OPDS (Komga, Kavita, Calibre) or an Archive collection link");
 		} else {
 			const cat_source_t *s = &C.src[r];
 			line(CAT_X0 + 8, y + 12, CAT_W - 16, FONT_PX_TITLE, THEME_FONT, s->name);
@@ -156,7 +158,7 @@ static void formats(const opds_entry *e, char *out, size_t cap)
 		snprintf(tok, sizeof tok, "%s", opds_acq_format(&e->acq[i]));
 		for (char *p = tok; *p; p++)
 			if (*p >= 'a' && *p <= 'z') *p = (char)(*p - 32);
-		if (strstr(out, tok)) continue;
+		if (!strcmp(tok,"OTHER") || strstr(out, tok)) continue;
 		size_t n = strlen(out);
 		snprintf(out + n, cap - n, "%s%s", any ? ", " : "", tok);
 		any = 1;
@@ -164,27 +166,16 @@ static void formats(const opds_entry *e, char *out, size_t cap)
 	if (!any && e->nacq > 0) snprintf(out, cap, "Not free to download");
 }
 
-static void entry_row(const opds_entry *e, int y)
+static void card(void *user,int r,grid_item_t *out)
 {
-	const char *img = e->thumb ? e->thumb : e->cover;
-	int tx = CAT_X0 + 8;
-	if (img || e->nacq > 0) {
-		cover_box(cat_cover(img, 0), tx, y + 4, THUMB_W, THUMB_H);
-		tx += THUMB_W + 14;
-	}
-	int w = CAT_X0 + CAT_W - 24 - tx;
-	line(tx, y + 10, w, FONT_PX_TITLE, THEME_FONT, e->title);
-	char sub[TEXT_LINE_MAX], f[64];
-	if (e->nacq > 0) {
-		formats(e, f, sizeof f);
-		snprintf(sub, sizeof sub, "%s%s%s", e->author ? e->author : "",
-		         e->author ? "  \xC2\xB7  " : "", f);
-	} else {
-		snprintf(sub, sizeof sub, "%s", e->summary ? e->summary : (e->author ? e->author : ""));
-	}
-	line(tx, y + 38, w, FONT_PX_LABEL, THEME_SUBFONT, sub);
-	if (e->nav_href && e->nacq == 0)
-		font_draw(CAT_X0 + CAT_W - 16, y + 22, THEME_SUBFONT, FONT_PX_TITLE, "\xE2\x80\xBA");
+ const cat_level_t *l=user; int index;
+ cat_row_kind_t k=cat_row(l,r,&index);
+ out->progress=-1;
+ if(k!=ROW_ENTRY) { out->title=k==ROW_PREV?"Previous page":"Next page"; out->badge="PAGE"; return; }
+ const opds_entry *e=&l->feed->entries[index];
+ out->title=e->title; out->cover=cat_cover(e->thumb?e->thumb:e->cover,0);
+ const opds_acq *one;
+ out->badge=catalog_downloads(e,1,&one,1)?"DOWNLOAD":e->pse_href?"READ":e->nav_href?"OPEN":NULL;
 }
 
 void cat_draw_feed(void)
@@ -196,26 +187,21 @@ void cat_draw_feed(void)
 		snprintf(right, sizeof right, "Loading\xE2\x80\xA6");
 	else if (l->feed && l->feed->total > 0)
 		snprintf(right, sizeof right, "%lld books", l->feed->total);
-	header(l->title, right[0] ? right : NULL);
+	line(CAT_X0,18,450,FONT_PX_TITLE,THEME_FONT,l->title);
+ if(right[0]) line(CAT_X0,492,450,FONT_PX_LABEL,THEME_SUBFONT,right);
 	if (!l->feed) {
 		if (l->fetch_id > 0) return;
 		centred(220, FONT_PX_TITLE, THEME_FONT, "This catalog could not be loaded");
 		centred(256, FONT_PX_LABEL, THEME_SUBFONT, l->err);
 		return;
 	}
-	int rows = cat_rows(l);
-	if (rows == 0) centred(240, FONT_PX_TITLE, THEME_SUBFONT, "Nothing here");
-	for (int r = l->top; r < rows && r < l->top + CAT_ROWS; r++) {
-		int y = CAT_HEAD_H + (r - l->top) * CAT_ROW_H, e;
-		if (r == l->sel) draw_rect(CAT_X0 - 8, y, CAT_W + 16, CAT_ROW_H - 4, THEME_SELECTED);
-		cat_row_kind_t k = cat_row(l, r, &e);
-		if (k == ROW_ENTRY)
-			entry_row(&l->feed->entries[e], y);
-		else
-			line(CAT_X0 + 8, y + 22, CAT_W - 16, FONT_PX_TITLE, THEME_SELECTOR,
-			     k == ROW_PREV ? "\xE2\x80\xB9  Previous page" : "Next page  \xE2\x80\xBA");
-		if (r == l->sel) draw_selector(CAT_X0 - 8, y, CAT_W + 16, CAT_ROW_H - 4, C.now);
-	}
+ draw_rrect(694,14,250,36,5,THEME_PANEL);
+ line(706,22,226,FONT_PX_LABEL,THEME_SELECTOR,l->filter[0]?l->filter:"Search comics…");
+ if(cat_rows(l)==0) centred(240,FONT_PX_TITLE,THEME_SUBFONT,"No matching comics");
+ grid_draw((grid_t *)&l->grid,card,(void *)l,C.now);
+ if(l->feed->search_href==NULL && catalog_api_kind(l->url)==0)
+  line(CAT_X0,492,CAT_W,FONT_PX_LABEL,THEME_SUBFONT,"Search filters this page; clear the search text to show all.");
+
 }
 
 void cat_draw_detail(void)
@@ -227,6 +213,10 @@ void cat_draw_detail(void)
 	vita2d_texture *t = cat_cover(e->cover ? e->cover : e->thumb, 1);
 	if (!t) t = cat_cover(e->thumb ? e->thumb : e->cover, 0); /* the row's copy meanwhile */
 	cover_box(t, CAT_X0, CAT_HEAD_H + 8, 180, 270);
+ const opds_acq *available;
+ int can_download=catalog_downloads(e,1,&available,1);
+ draw_rrect(CAT_X0,354,180,44,5,THEME_PANEL);
+ line(CAT_X0+12,366,156,FONT_PX_LABEL,THEME_SELECTOR,can_download?"Download":e->pse_href?"Read now":"No free download");
 	int x = CAT_X0 + 200, w = CAT_W - 200, y = CAT_HEAD_H + 8;
 	static char lines[12][TEXT_LINE_MAX];
 	int n = text_wrap(FONT_PX_TITLE, e->title, w, 3, lines);

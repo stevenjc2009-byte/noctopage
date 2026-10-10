@@ -120,6 +120,9 @@ static void test_files(void)
 	CHECK_INT(coverimg_save(f, g_px), 0);
 	CHECK_INT(coverimg_load(f, back), 0);
 	CHECK(memcmp(g_px, back, COVER_BYTES) == 0);
+    char err[160] = "";
+    CHECK_INT(coverimg_file(f, back, err, sizeof err), 0);
+    CHECK(memcmp(g_px, back, COVER_BYTES) == 0);
 
 	FILE *fp = fopen(f, "ab"); /* one byte too many */
 	fputc(0, fp);
@@ -136,7 +139,10 @@ static void test_files(void)
 	fclose(fp);
 	CHECK_INT(coverimg_load(f, back), -1);
 
-	remove(f);
+	CHECK_INT(coverimg_file(FIX "folder_comic/page2.png", back, err, sizeof err), 0);
+    CHECK(near(back, 30, 40, 60, 90, 200, 2));
+    CHECK_INT(coverimg_file(FIX "minimal.txt", back, err, sizeof err), -1);
+    remove(f);
 	CHECK_INT(coverimg_load(f, back), -1);
 	CHECK_INT(coverimg_save("no-such-dir/x.bin", g_px), -1);
 }

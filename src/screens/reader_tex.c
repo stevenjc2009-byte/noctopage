@@ -11,7 +11,13 @@
 #include <vita2d.h>
 
 #define RTEX_SLOTS 6
-#define UPLOADS_PER_FRAME 1 /* a 960x1360 page is a 5 MB copy */
+/* Upload budget per frame instead of a fixed count: one 5 MB page, or several small
+ * ones, so fast paging catches up without stalling the frame on copies. */
+#define UPLOAD_BYTES_PER_FRAME (6u * 1024u * 1024u)
+/* Retired textures wait this many frames before freeing, so eviction never stalls on
+ * vita2d_wait_rendering_done in the middle of paging. */
+#define RETIRE_FRAMES 2
+#define RETIRE_N (RTEX_SLOTS + 2)
 
 typedef struct {
 	rtex_t t;
@@ -21,23 +27,76 @@ typedef struct {
 
 static slot_t g_slot[RTEX_SLOTS];
 static uint32_t g_tick;
-static int g_uploads_left = UPLOADS_PER_FRAME;
+static size_t g_upload_left = UPLOAD_BYTES_PER_FRAME;
+static int g_uploaded;
+static struct {
+	void *tex;
+	int age;
+} g_retire[RETIRE_N];
+
+static void free_now(void *t)
+{
+	if (!t) return;
+	vita2d_wait_rendering_done(); /* the GPU may still be drawing the last frame with it */
+	vita2d_free_texture(t);
+}
+
+static void retire(void *t)
+{
+	int i;
+
+	if (!t) return;
+	for (i = 0; i < RETIRE_N; i++)
+		if (!g_retire[i].tex) {
+			g_retire[i].tex = t;
+			g_retire[i].age = 0;
+			return;
+		}
+	free_now(t); /* retire list full (should not happen): stall rather than leak */
+}
 
 static void free_slot(slot_t *s)
 {
+	int i;
+
 	if (!s->used) return;
-	vita2d_wait_rendering_done(); /* the GPU may still be drawing the last frame with it */
-	for (int i = 0; i < s->t.ntiles; i++)
-		if (s->t.tex[i]) vita2d_free_texture(s->t.tex[i]);
+	for (i = 0; i < s->t.ntiles; i++)
+		retire(s->t.tex[i]);
 	memset(s, 0, sizeof *s);
 }
 
 void rtex_clear(void)
 {
-	for (int i = 0; i < RTEX_SLOTS; i++) free_slot(&g_slot[i]);
+	int i, k;
+
+	/* Book switch: free at once (with the stall) rather than retiring, so the old
+	 * book's textures do not sit in GPU memory next to the new book's. */
+	for (i = 0; i < RTEX_SLOTS; i++) {
+		if (!g_slot[i].used) continue;
+		for (k = 0; k < g_slot[i].t.ntiles; k++)
+			free_now(g_slot[i].t.tex[k]);
+		memset(&g_slot[i], 0, sizeof g_slot[i]);
+	}
+	for (i = 0; i < RETIRE_N; i++) {
+		free_now(g_retire[i].tex);
+		g_retire[i].tex = NULL;
+		g_retire[i].age = 0;
+	}
 }
 
-void rtex_new_frame(void) { g_uploads_left = UPLOADS_PER_FRAME; }
+void rtex_new_frame(void)
+{
+	int i;
+
+	g_upload_left = UPLOAD_BYTES_PER_FRAME;
+	g_uploaded = 0;
+	for (i = 0; i < RETIRE_N; i++)
+		if (g_retire[i].tex && ++g_retire[i].age >= RETIRE_FRAMES) {
+			vita2d_free_texture(g_retire[i].tex); /* aged out: no wait needed */
+			g_retire[i].tex = NULL;
+			g_retire[i].age = 0;
+		}
+}
 
 static slot_t *find(int page, int box_w, int box_h)
 {
@@ -65,8 +124,12 @@ static vita2d_texture *upload_tile(const uint8_t *rgba, int w, int h)
 	if (!t) return NULL;
 	uint8_t *dst = vita2d_texture_get_datap(t);
 	unsigned stride = vita2d_texture_get_stride(t);
-	for (int y = 0; y < h; y++)
-		memcpy(dst + (size_t)y * stride, rgba + (size_t)y * (size_t)w * 4, (size_t)w * 4);
+	if (stride == (unsigned)w * 4) {
+		memcpy(dst, rgba, (size_t)w * (size_t)h * 4);
+	} else {
+		for (int y = 0; y < h; y++)
+			memcpy(dst + (size_t)y * stride, rgba + (size_t)y * (size_t)w * 4, (size_t)w * 4);
+	}
 	vita2d_texture_set_filters(t, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
 	return t;
 }
@@ -123,16 +186,24 @@ const rtex_t *rtex_fetch(int page, int box_w, int box_h)
 		s->tick = ++g_tick;
 		return &s->t;
 	}
-	if (g_uploads_left <= 0 || !R.ld) return NULL;
+	if (!R.ld) return NULL;
 	const loader_page_t *p = loader_get(R.ld, page, box_w, box_h);
 	if (!p) return NULL;
-	g_uploads_left--;
+	/* Second and later uploads share the frame budget; the first always goes through
+	 * so a single huge page cannot starve every frame. */
+	size_t cost = (size_t)p->w * (size_t)p->h * 4;
+	if (g_uploaded && cost > g_upload_left) {
+		loader_release(R.ld, p);
+		return NULL;
+	}
 	s = victim();
 	free_slot(s);
 	int ok = fill(s, p, box_w, box_h) == 0;
 	reader_note_size(page, p->src_w, p->src_h);
 	reader_crop_note(p);
 	loader_release(R.ld, p);
+	g_uploaded = 1;
+	g_upload_left = cost > g_upload_left ? 0 : g_upload_left - cost;
 	if (!ok) {
 		free_slot(s);
 		return NULL;

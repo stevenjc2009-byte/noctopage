@@ -48,4 +48,5 @@ int path_dirname(char *dst, size_t cap, const char *path);
  * is none. A leading dot alone (".hidden") is not an extension. "a.tar.gz" -> "gz". */
 const char *path_ext(const char *path);
 
+int str_page_number(const char *s,int max,int *out);
 #endif

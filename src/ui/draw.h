@@ -34,4 +34,8 @@ void draw_selector(int x, int y, int w, int h, uint64_t now_ms);
 int draw_glyph(glyph_t g, int x, int y);
 int draw_glyph_width(glyph_t g);
 
+/* Fit-draw a cover texture (vita2d_texture *) centred in the (x, y, w, h) box,
+ * keeping its aspect. NULL draws nothing (the caller paints the placeholder). */
+void draw_cover_fit(void *tex, int x, int y, int w, int h);
+
 #endif
