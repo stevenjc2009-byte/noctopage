@@ -84,6 +84,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         u = urllib.parse.urlsplit(self.path)
         q = dict(urllib.parse.parse_qsl(u.query))
         p = u.path
+        if p == "/encoding-redirect":
+            return self.send_body(302, b"", extra={"Location": "/encoding"})
+        if p == "/encoding":
+            # Broken compressed response reproduces the decoder failure when
+            # compression is negotiated; an identity request gets valid JSON.
+            if self.headers.get("Accept-Encoding") != "identity":
+                return self.send_body(200, b"invalid gzip stream", extra={"Content-Encoding": "gzip"})
+            return self.send_body(200, b'{"tag_name":"v00.05"}', "application/json")
         if p.startswith("/f/"):
             return self.serve_file(p[3:])
         if p.startswith("/badrange/"):  # 206 that always starts at byte 0

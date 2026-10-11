@@ -315,7 +315,10 @@ int http_get(const char *url, const http_auth_t *auth, size_t max_bytes, const v
 		return -1;
 	}
 	if (max_bytes) curl_easy_setopt(c, CURLOPT_MAXFILESIZE_LARGE, (curl_off_t)max_bytes);
-	curl_easy_setopt(c, CURLOPT_ACCEPT_ENCODING, "");
+	/* Vita curl's negotiated compression can fail inside its decoder. Request
+	 * plain metadata/catalogue responses; keep decoding enabled for servers
+	 * that ignore identity, and retain the memory limit in mem_write. */
+	curl_easy_setopt(c, CURLOPT_ACCEPT_ENCODING, "identity");
 	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, mem_write);
 	curl_easy_setopt(c, CURLOPT_WRITEDATA, &x);
 	CURLcode rc = curl_easy_perform(c);

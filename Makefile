@@ -12,7 +12,7 @@ SIZE    := $(PREFIX)-size
 
 TITLE     := Noctopage
 TITLE_ID  := NOCT00001
-APP_VER   := 00.04
+APP_VER   := 00.05
 TARGET    := noctopage
 VPK_NAME  := Noctopage.vpk
 BUILD     ?= build

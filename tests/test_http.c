@@ -204,6 +204,24 @@ static void test_names(void)
 	CHECK(!dlq_name_from_url("http://h/dir/?q=a/b.epub", n, sizeof n));
 }
 
+static void test_identity(void)
+{
+    http_doc_t d;
+    char err[160];
+    /* Exercise direct and redirected release metadata on reused curl handles. */
+    for (int i = 0; i < 3; i++) {
+        CHECK_INT(http_get(U(i == 1 ? "/encoding-redirect" : "/encoding"), NULL,
+                           1024, NULL, &d, err, sizeof err), 0);
+        CHECK_STR(err, "");
+        CHECK_STR(d.data, "{\"tag_name\":\"v00.05\"}");
+        CHECK_STR(d.content_type, "application/json");
+        http_doc_free(&d);
+    }
+    CHECK_INT(http_get(U("/encoding"), NULL, 4, NULL, &d, err, sizeof err), -1);
+    CHECK_STR(err, "Too large");
+    CHECK(d.data == NULL);
+}
+
 static void test_get(void)
 {
 	http_doc_t d;
@@ -366,6 +384,7 @@ int main(int argc, char **argv)
 	CHECK_INT(http_global_init(NULL), 0);
 	CHECK_INT(server_start(argv[0], 11610), 0);
 	if (g_port) {
+		test_identity();
 		test_get();
 		test_download();
 	}

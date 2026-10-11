@@ -1,5 +1,15 @@
 # Changelog
 
+## 00.05
+
+- Request uncompressed HTTP metadata/catalogue responses to avoid the Vita curl
+  content-decoding failure during GitHub update checks.
+- Regression coverage for valid metadata, redirects, connection reuse and response limits.
+- Retain the official GitHub updater source and package SHA-256 verification.
+
+Install this build manually with VitaShell if 00.04 cannot check for updates.
+Physical-Vita update installation/restart remains unverified.
+
 ## 00.04
 
 - Official GitHub repository and stable-release downloads, with this repository configured

@@ -18,7 +18,7 @@ reading progress, a PIN-protected Private section, online catalogue browsing and
 4. Open NoctoPage. If you add books while it is running, use **Settings → Look for new books now**.
 
 VPKs are provided as release assets, rather than stored in the source repository.
-Version **00.04** already points to **`stevenjc2009-byte/noctopage`** for updates.
+Version **00.05** already points to **`stevenjc2009-byte/noctopage`** for updates.
 
 ## Features
 
@@ -80,7 +80,10 @@ using the Vita package installer. Your books and reading state remain outside th
 
 **Settings → GitHub update repository** shows the official default and permits a custom public
 repository. Previously saved custom settings are preserved. Only strictly newer versions install;
-the 00.04 app correctly reports up to date when the latest release is also 00.04.
+the 00.05 app correctly reports up to date when the latest release is also 00.05.
+
+If 00.04 reports a content-decoding/decompression error when checking, install 00.05
+manually with VitaShell once. This version requests uncompressed HTTP responses.
 
 The download/validation path and live GitHub release metadata are tested. **Installation and
 restart on a physical Vita have not been verified in this release's development session.**
